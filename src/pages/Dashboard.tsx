@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CreditCard, MonitorSmartphone, Zap, ScrollText, History, Database, Server, Network, Shield, Plus, Globe, Wrench, Sparkles, X } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
@@ -42,21 +42,6 @@ type Stat = { label: string; value: string; icon: string };
 type Panel = { accent?: string; title?: string; body: string };
 
 type BaseItem = { id: string; name: string; created_at: string; category: string };
-
-/** Strips dates/timestamps from base names and normalises legacy "auto" bases. */
-const cleanBaseName = (raw: string) => {
-  let s = (raw ?? "").trim();
-  s = s
-    .replace(/\b\d{4}[-/]\d{2}[-/]\d{2}\b/g, "")
-    .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, "")
-    .replace(/\bT\d{2}\b/g, "")
-    .replace(/[·\-–—|,_]+\s*$/g, "")
-    .replace(/^\s*[·\-–—|,_]+/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-  if (!s || /^(auto|base|import|cards)$/i.test(s)) return "Recent Fetched Base";
-  return s;
-};
 
 const bucketLabel = (iso: string) => {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -120,11 +105,10 @@ const Dashboard = () => {
     const seen = new Set<string>();
     const uniq: BaseItem[] = [];
     for (const b of bases) {
-      const clean = cleanBaseName(b.name);
-      const key = `${b.category}:${clean.toLowerCase()}`;
-      if (seen.has(key)) continue;
+      const key = `${b.category}:${(b.name ?? "").trim().toLowerCase()}`;
+      if (!key || seen.has(key)) continue;
       seen.add(key);
-      uniq.push({ ...b, name: clean });
+      uniq.push(b);
     }
     const out: { label: string; items: BaseItem[] }[] = [];
     for (const b of uniq) {
@@ -135,19 +119,6 @@ const Dashboard = () => {
     }
     return out;
   }, [bases]);
-
-  // Infinite scroll — append older bases as the user reaches the end of the feed.
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && bases.length >= limit) setLimit((n) => n + 30);
-    }, { rootMargin: "300px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [bases.length, limit]);
-
 
 
   const resolveStatValue = (s: Stat) => {
@@ -320,12 +291,9 @@ const Dashboard = () => {
               </div>
             )}
 
-            <div ref={sentinelRef} />
-
             {bases.length >= limit && (
-              <div className="flex flex-col items-center gap-2 pt-2">
-                <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Loading older bases…</span>
-                <Button variant="secondary" size="sm" onClick={() => setLimit((n) => n + 30)}>Load more</Button>
+              <div className="flex justify-center pt-2">
+                <Button variant="secondary" onClick={() => setLimit((n) => n + 30)}>Load more</Button>
               </div>
             )}
           </div>

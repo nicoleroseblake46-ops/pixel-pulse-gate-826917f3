@@ -124,7 +124,7 @@ const AdminProducts = () => {
       bin: isCards ? form.bin.trim() || null : null,
       country: form.country.trim() || null,
       state: form.state.trim() || null,
-      city: isCards ? form.city.trim() || null : null,
+      city: (isCards || active === "socks") ? form.city.trim() || null : null,
       brand: form.brand.trim() || null,
       card_type: form.card_type.trim() || null,
       bank: form.bank.trim() || null,
@@ -135,7 +135,7 @@ const AdminProducts = () => {
       scheme: isCards ? form.scheme.trim() || null : null,
       level: form.level.trim() || null,
       country_code: form.country_code.trim() || null,
-      extras: isCards ? form.extras.trim() || null : null,
+      extras: (isCards || active === "socks") ? form.extras.trim() || null : null,
       image_url: form.image_url.trim() || null,
       vendor_id: form.vendor_id || null,
       full_card: isCards ? form.full_card.trim() || null : null,
@@ -433,6 +433,32 @@ const AdminProducts = () => {
                     </div>
                   )}
 
+                  {active === "socks" && (
+                    <div className="grid gap-3 rounded-lg border border-border/60 bg-secondary/30 p-3 md:grid-cols-2">
+                      <Input placeholder="Name / Label" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                      <Input placeholder="Type (Residential / Datacenter / Mobile / ISP)" value={form.card_type} onChange={(e) => setForm({ ...form, card_type: e.target.value })} />
+                      <Input placeholder="Provider" value={form.bank} onChange={(e) => setForm({ ...form, bank: e.target.value })} />
+                      <Input placeholder="Speed (e.g. 1Gbps)" value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} />
+                      <div className="md:col-span-2">
+                        <Select
+                          value={findCountry(form.country_code)?.code ?? ""}
+                          onValueChange={(code) => { const c = COUNTRIES.find((x) => x.code === code); if (c) setForm({ ...form, country: c.name, country_code: c.code }); }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Country">
+                              {form.country_code && (<span className="inline-flex items-center gap-2"><CountryFlag value={form.country_code} width={22} /><span>{form.country}</span></span>)}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent className="max-h-72">
+                            {COUNTRIES.map((c) => (<SelectItem key={c.code} value={c.code}><span className="inline-flex items-center gap-2"><CountryFlag value={c.code} width={22} /><span>{c.name}</span></span></SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Input placeholder="State / region" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+                      <Input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+                      <Textarea placeholder="Delivery credentials (host:port:user:pass) — delivered on purchase" value={form.extras} onChange={(e) => setForm({ ...form, extras: e.target.value })} className="md:col-span-2 font-mono" />
+                    </div>
+                  )}
 
 
 
@@ -508,6 +534,8 @@ type Panel = { accent?: string; title?: string; body: string };
 const DEFAULT_STATS: Stat[] = [
   { label: "Total CVVs", value: "auto:cards", icon: "CreditCard" },
   { label: "Total RDPs", value: "auto:rdp", icon: "MonitorSmartphone" },
+  { label: "Total SOCKS", value: "auto:socks", icon: "Zap" },
+  { label: "Total LOGS", value: "auto:logs", icon: "ScrollText" },
   { label: "CVV Update Time", value: "Soon", icon: "History" },
 ];
 
@@ -597,7 +625,7 @@ const DashboardEditor = () => {
 
       <div>
         <h2 className="font-display text-xl font-black">Dashboard — Stats row</h2>
-        <p className="text-xs text-muted-foreground">Use <code>auto:cards</code>, <code>auto:rdp</code>, <code>auto:proxy</code>, <code>auto:tools</code>, <code>auto:sales</code> as the value to auto-count active products. Otherwise type any text.</p>
+        <p className="text-xs text-muted-foreground">Use <code>auto:cards</code>, <code>auto:rdp</code>, <code>auto:socks</code>, <code>auto:proxy</code>, <code>auto:logs</code>, <code>auto:tools</code>, <code>auto:sales</code> as the value to auto-count active products. Otherwise type any text.</p>
       </div>
       <div className="space-y-3">
         {stats.map((s, i) => (
@@ -657,132 +685,6 @@ const DashboardEditor = () => {
  */
 const FIRST_NAMES = ["James","Mary","John","Patricia","Robert","Jennifer","Michael","Linda","William","Elizabeth","David","Barbara","Richard","Susan","Joseph","Jessica","Thomas","Sarah","Charles","Karen","Daniel","Nancy","Matthew","Lisa","Christopher","Margaret","Anthony","Sandra","Mark","Ashley"];
 const LAST_NAMES = ["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Rodriguez","Martinez","Hernandez","Lopez","Wilson","Anderson","Taylor","Thomas","Moore","Jackson","Martin","Lee","Perez","Thompson","White","Harris","Sanchez","Clark","Ramirez","Lewis","Robinson","Walker"];
-
-/** Culturally diverse cardholder name pools per country. */
-const NAMES_BY_CC: Record<string, { first: string[]; last: string[] }> = {
-  US: { first: ["James","Mary","Michael","Ashley","Jose","Aisha","Ethan","Sofia","Tyrone","Emily","Daniel","Grace","Kevin","Nia","Brandon","Olivia"], last: ["Smith","Johnson","Garcia","Nguyen","Patel","Washington","Rodriguez","Miller","Cohen","O'Brien","Kim","Jackson"] },
-  CA: { first: ["Liam","Emma","Noah","Olivia","Jean","Chloé","Ayaan","Sophie","Lucas","Maya"], last: ["Tremblay","Gagnon","Smith","Roy","Singh","Wong","Martin","Brown","Lavoie","Chen"] },
-  GB: { first: ["Oliver","Amelia","Harry","Isla","Mohammed","Freya","Jack","Poppy","Arthur","Ava"], last: ["Smith","Jones","Taylor","Brown","Khan","Patel","Wilson","Davies","O'Connor","Okafor"] },
-  AU: { first: ["Jack","Charlotte","Oliver","Mia","Lachlan","Ruby","Ethan","Zoe"], last: ["Smith","Nguyen","Jones","Williams","Brown","Taylor","Wilson","Anderson"] },
-  DE: { first: ["Lukas","Hannah","Jonas","Emilia","Felix","Lena","Maximilian","Mia","Mehmet","Leyla"], last: ["Müller","Schmidt","Schneider","Fischer","Weber","Wagner","Becker","Yilmaz","Hoffmann","Koch"] },
-  FR: { first: ["Louis","Camille","Hugo","Chloé","Nathan","Manon","Karim","Inès","Théo","Léa"], last: ["Martin","Bernard","Dubois","Thomas","Robert","Petit","Moreau","Benali","Girard","Laurent"] },
-  NL: { first: ["Daan","Sanne","Sem","Julia","Lars","Femke","Bram","Anouk"], last: ["de Jong","Jansen","de Vries","van den Berg","Bakker","Visser","Smit","Meijer"] },
-  IT: { first: ["Marco","Giulia","Alessandro","Sofia","Matteo","Chiara","Luca","Martina"], last: ["Rossi","Russo","Ferrari","Esposito","Bianchi","Romano","Colombo","Greco"] },
-  ES: { first: ["Hugo","Lucía","Martín","Sofía","Pablo","Valeria","Diego","Carmen"], last: ["García","Martínez","López","Sánchez","Pérez","Gómez","Fernández","Ruiz"] },
-  PT: { first: ["João","Maria","Tiago","Beatriz","Rui","Inês"], last: ["Silva","Santos","Ferreira","Pereira","Oliveira","Costa"] },
-  BR: { first: ["Lucas","Ana","Pedro","Juliana","Rafael","Camila","Thiago","Larissa"], last: ["Silva","Santos","Oliveira","Souza","Lima","Pereira","Costa","Almeida"] },
-  MX: { first: ["Santiago","Valentina","Mateo","Regina","Diego","Ximena"], last: ["Hernández","García","Martínez","López","González","Ramírez"] },
-  AR: { first: ["Mateo","Sofía","Benjamín","Emma","Joaquín","Martina"], last: ["González","Rodríguez","Fernández","López","Díaz","Romero"] },
-  CO: { first: ["Juan","Valeria","Andrés","Isabella","Camilo","Mariana"], last: ["Rodríguez","Gómez","González","Martínez","Ramírez","Muñoz"] },
-  CL: { first: ["Vicente","Isidora","Agustín","Florencia"], last: ["González","Muñoz","Rojas","Díaz","Contreras"] },
-  PE: { first: ["Luis","Camila","Diego","Fernanda"], last: ["Quispe","Flores","Vargas","Ramos","Castillo"] },
-  VE: { first: ["Carlos","Andreína","José","Yulimar"], last: ["Rodríguez","González","Pérez","Blanco"] },
-  RU: { first: ["Dmitry","Anastasia","Ivan","Ekaterina","Sergey","Olga"], last: ["Ivanov","Smirnova","Kuznetsov","Popova","Sokolov","Volkova"] },
-  UA: { first: ["Oleksandr","Olena","Andriy","Kateryna"], last: ["Shevchenko","Kovalenko","Bondarenko","Tkachenko"] },
-  PL: { first: ["Jakub","Zofia","Antoni","Julia"], last: ["Nowak","Kowalski","Wiśniewski","Wójcik","Lewandowska"] },
-  TR: { first: ["Yusuf","Zeynep","Mustafa","Elif","Emre","Ayşe"], last: ["Yılmaz","Kaya","Demir","Şahin","Çelik","Arslan"] },
-  SE: { first: ["Erik","Alva","Oscar","Maja"], last: ["Andersson","Johansson","Karlsson","Nilsson"] },
-  NO: { first: ["Jakob","Nora","Emil","Ingrid"], last: ["Hansen","Johansen","Olsen","Larsen"] },
-  DK: { first: ["William","Freja","Oscar","Ida"], last: ["Nielsen","Jensen","Hansen","Pedersen"] },
-  FI: { first: ["Onni","Aino","Elias","Sofia"], last: ["Korhonen","Virtanen","Mäkinen","Nieminen"] },
-  IE: { first: ["Conor","Saoirse","Cian","Aoife"], last: ["Murphy","Kelly","O'Sullivan","Byrne","Ryan"] },
-  CH: { first: ["Noah","Mia","Liam","Emma"], last: ["Müller","Meier","Schmid","Keller","Rossi"] },
-  AT: { first: ["Paul","Anna","Jakob","Marie"], last: ["Gruber","Huber","Bauer","Wagner"] },
-  BE: { first: ["Arthur","Louise","Jules","Olivia"], last: ["Peeters","Janssens","Maes","Dubois"] },
-  GR: { first: ["Giorgos","Maria","Nikos","Eleni"], last: ["Papadopoulos","Nikolaou","Georgiou","Vlachos"] },
-  RO: { first: ["Andrei","Maria","Ionut","Elena"], last: ["Popescu","Ionescu","Popa","Radu"] },
-  CZ: { first: ["Jakub","Eliška","Tomáš","Tereza"], last: ["Novák","Svoboda","Dvořák","Černý"] },
-  JP: { first: ["Haruto","Yui","Sota","Sakura","Ren","Aoi"], last: ["Sato","Suzuki","Takahashi","Tanaka","Watanabe","Ito"] },
-  KR: { first: ["Min-jun","Seo-yeon","Ji-ho","Ha-eun"], last: ["Kim","Lee","Park","Choi","Jung"] },
-  CN: { first: ["Wei","Xiu Ying","Jian","Li Na","Hao","Mei"], last: ["Wang","Li","Zhang","Liu","Chen","Yang"] },
-  HK: { first: ["Chun","Wing","Ka Yan","Ho"], last: ["Chan","Wong","Lee","Cheung","Lau"] },
-  SG: { first: ["Wei Jie","Siti","Arjun","Mei Ling"], last: ["Tan","Lim","Lee","Kumar","Rahman"] },
-  MY: { first: ["Muhammad","Nur","Wei Xiang","Aisyah"], last: ["Abdullah","Ismail","Tan","Rajan"] },
-  TH: { first: ["Somchai","Ploy","Anan","Nattaya"], last: ["Saetang","Chaiyaporn","Srisuk","Wongchai"] },
-  VN: { first: ["Minh","Linh","Tuan","Thao"], last: ["Nguyen","Tran","Le","Pham","Hoang"] },
-  PH: { first: ["Juan","Maria","Jose","Angeline"], last: ["Santos","Reyes","Cruz","Bautista","Garcia"] },
-  ID: { first: ["Budi","Siti","Agus","Dewi"], last: ["Wijaya","Santoso","Putra","Sari"] },
-  IN: { first: ["Aarav","Priya","Rohan","Ananya","Vikram","Meera"], last: ["Sharma","Patel","Singh","Iyer","Reddy","Gupta"] },
-  PK: { first: ["Ali","Fatima","Hassan","Ayesha"], last: ["Khan","Ahmed","Malik","Hussain"] },
-  AE: { first: ["Omar","Fatima","Khalid","Noura"], last: ["Al Mansouri","Al Marzooqi","Rahman","Al Suwaidi"] },
-  SA: { first: ["Abdullah","Sara","Mohammed","Reem"], last: ["Al Saud","Al Ghamdi","Al Harbi","Al Otaibi"] },
-  IL: { first: ["Noam","Maya","Eitan","Shira"], last: ["Cohen","Levi","Mizrahi","Peretz"] },
-  ZA: { first: ["Thabo","Lerato","Sipho","Zanele"], last: ["Nkosi","Dlamini","Botha","Van der Merwe","Mokoena"] },
-  NG: { first: ["Chinedu","Amara","Emeka","Ngozi","Yusuf","Aisha"], last: ["Okafor","Adeyemi","Balogun","Eze","Abubakar"] },
-  KE: { first: ["Kamau","Wanjiru","Otieno","Akinyi"], last: ["Mwangi","Ochieng","Kiptoo","Njoroge"] },
-  EG: { first: ["Ahmed","Mona","Mahmoud","Yasmin"], last: ["Hassan","Ibrahim","El Sayed","Mostafa"] },
-  MA: { first: ["Youssef","Salma","Hamza","Nadia"], last: ["Benali","El Amrani","Bouchra","Tazi"] },
-  CM: { first: ["Jean-Paul","Marie","Etienne","Chantal"], last: ["Ndiaye","Mbarga","Nkeng","Fotso"] },
-  NZ: { first: ["Ethan","Ella","Nikau","Aroha"], last: ["Smith","Williams","Ngata","Tane"] },
-};
-
-/** Realistic issuing banks per country — used when the pasted bank is missing or unknown. */
-const BANKS_BY_CC: Record<string, string[]> = {
-  US: ["CHASE BANK USA, N.A.","BANK OF AMERICA, N.A.","WELLS FARGO BANK, N.A.","CITIBANK, N.A.","CAPITAL ONE BANK USA, N.A.","U.S. BANK, N.A.","PNC BANK, N.A.","NAVY FEDERAL CREDIT UNION","SYNCHRONY BANK","TRUIST BANK","FIFTH THIRD BANK","REGIONS BANK"],
-  CA: ["ROYAL BANK OF CANADA","TD CANADA TRUST","SCOTIABANK","BANK OF MONTREAL","CIBC","DESJARDINS","TANGERINE BANK"],
-  GB: ["BARCLAYS BANK PLC","LLOYDS BANK PLC","HSBC UK BANK PLC","NATWEST BANK PLC","SANTANDER UK PLC","MONZO BANK LTD","STARLING BANK LTD","HALIFAX"],
-  AU: ["COMMONWEALTH BANK OF AUSTRALIA","WESTPAC BANKING CORP","ANZ BANKING GROUP","NATIONAL AUSTRALIA BANK","BENDIGO BANK","MACQUARIE BANK"],
-  DE: ["DEUTSCHE BANK AG","COMMERZBANK AG","SPARKASSE","POSTBANK","DKB DEUTSCHE KREDITBANK","N26 BANK GMBH"],
-  FR: ["BNP PARIBAS","CREDIT AGRICOLE","SOCIETE GENERALE","LA BANQUE POSTALE","CREDIT MUTUEL","BPCE"],
-  NL: ["ING BANK N.V.","ABN AMRO BANK N.V.","RABOBANK","BUNQ B.V.","SNS BANK"],
-  IT: ["INTESA SANPAOLO S.P.A.","UNICREDIT S.P.A.","BANCO BPM","MONTE DEI PASCHI DI SIENA","BPER BANCA"],
-  ES: ["BANCO SANTANDER S.A.","BBVA S.A.","CAIXABANK S.A.","BANCO SABADELL","BANKINTER S.A."],
-  PT: ["CAIXA GERAL DE DEPOSITOS","MILLENNIUM BCP","NOVO BANCO","BANCO SANTANDER TOTTA"],
-  BR: ["BANCO DO BRASIL S.A.","ITAU UNIBANCO S.A.","BRADESCO S.A.","CAIXA ECONOMICA FEDERAL","NUBANK","BANCAR TECNOLOGIA S.A."],
-  MX: ["BBVA MEXICO","BANORTE","SANTANDER MEXICO","BANAMEX","HSBC MEXICO"],
-  AR: ["BANCO DE LA NACION ARGENTINA","BANCO GALICIA","BANCO SANTANDER RIO","BBVA ARGENTINA"],
-  CO: ["BANCOLOMBIA S.A.","BANCO DE BOGOTA","DAVIVIENDA","BBVA COLOMBIA","BANCO POPULAR"],
-  CL: ["BANCO DE CHILE","BANCO SANTANDER CHILE","BANCOESTADO","BCI"],
-  PE: ["BANCO DE CREDITO DEL PERU","BBVA PERU","INTERBANK","SCOTIABANK PERU"],
-  VE: ["BANCO DE VENEZUELA","BANESCO","MERCANTIL BANCO","BBVA PROVINCIAL"],
-  RU: ["SBERBANK","VTB BANK","ALFA-BANK","TINKOFF BANK","GAZPROMBANK"],
-  UA: ["PRIVATBANK","OSCHADBANK","MONOBANK","RAIFFEISEN BANK AVAL"],
-  PL: ["PKO BANK POLSKI","BANK PEKAO S.A.","MBANK S.A.","ING BANK SLASKI","SANTANDER BANK POLSKA"],
-  TR: ["TURKIYE IS BANKASI","GARANTI BBVA","YAPI VE KREDI BANKASI","AKBANK T.A.S.","ZIRAAT BANKASI"],
-  SE: ["SWEDBANK AB","SEB","HANDELSBANKEN","NORDEA BANK AB"],
-  NO: ["DNB BANK ASA","SPAREBANK 1","NORDEA BANK NORGE"],
-  DK: ["DANSKE BANK A/S","NYKREDIT BANK","JYSKE BANK","NORDEA DANMARK"],
-  FI: ["NORDEA BANK FINLAND","OP FINANCIAL GROUP","DANSKE BANK FINLAND"],
-  IE: ["ALLIED IRISH BANKS","BANK OF IRELAND","PERMANENT TSB","REVOLUT BANK UAB"],
-  CH: ["UBS SWITZERLAND AG","CREDIT SUISSE AG","POSTFINANCE AG","RAIFFEISEN SCHWEIZ"],
-  AT: ["ERSTE BANK","RAIFFEISEN BANK AUSTRIA","BANK AUSTRIA","BAWAG P.S.K."],
-  BE: ["KBC BANK N.V.","BNP PARIBAS FORTIS","BELFIUS BANK","ING BELGIUM"],
-  GR: ["NATIONAL BANK OF GREECE","ALPHA BANK","PIRAEUS BANK","EUROBANK"],
-  RO: ["BANCA TRANSILVANIA","BCR","BRD - GROUPE SOCIETE GENERALE","ING BANK ROMANIA"],
-  CZ: ["CESKA SPORITELNA","KOMERCNI BANKA","CSOB","MONETA MONEY BANK"],
-  JP: ["MUFG BANK, LTD.","SUMITOMO MITSUI BANKING CORP","MIZUHO BANK, LTD.","RAKUTEN BANK","JAPAN POST BANK"],
-  KR: ["KB KOOKMIN BANK","SHINHAN BANK","WOORI BANK","HANA BANK","NH NONGHYUP BANK"],
-  CN: ["INDUSTRIAL AND COMMERCIAL BANK OF CHINA","CHINA CONSTRUCTION BANK","BANK OF CHINA","AGRICULTURAL BANK OF CHINA","CHINA MERCHANTS BANK"],
-  HK: ["HSBC HONG KONG","BANK OF EAST ASIA","HANG SENG BANK","STANDARD CHARTERED HK"],
-  SG: ["DBS BANK LTD","OCBC BANK","UNITED OVERSEAS BANK","STANDARD CHARTERED SG"],
-  MY: ["MAYBANK","CIMB BANK BERHAD","PUBLIC BANK BERHAD","RHB BANK"],
-  TH: ["BANGKOK BANK","KASIKORNBANK","SIAM COMMERCIAL BANK","KRUNGTHAI BANK"],
-  VN: ["VIETCOMBANK","BIDV","VIETINBANK","TECHCOMBANK"],
-  PH: ["BDO UNIBANK","BANK OF THE PHILIPPINE ISLANDS","METROBANK","LANDBANK"],
-  ID: ["BANK MANDIRI","BANK CENTRAL ASIA","BANK RAKYAT INDONESIA","BANK NEGARA INDONESIA"],
-  IN: ["STATE BANK OF INDIA","HDFC BANK LTD","ICICI BANK LTD","AXIS BANK LTD","KOTAK MAHINDRA BANK"],
-  PK: ["HABIB BANK LIMITED","MCB BANK LIMITED","UNITED BANK LIMITED","MEEZAN BANK"],
-  AE: ["EMIRATES NBD","FIRST ABU DHABI BANK","ABU DHABI COMMERCIAL BANK","MASHREQ BANK"],
-  SA: ["AL RAJHI BANK","SAUDI NATIONAL BANK","RIYAD BANK","BANQUE SAUDI FRANSI"],
-  IL: ["BANK HAPOALIM","BANK LEUMI","ISRAEL DISCOUNT BANK","MIZRAHI TEFAHOT"],
-  ZA: ["STANDARD BANK OF SOUTH AFRICA","ABSA BANK LTD","FIRSTRAND BANK (FNB)","NEDBANK LTD","CAPITEC BANK"],
-  NG: ["GUARANTY TRUST BANK","ZENITH BANK PLC","ACCESS BANK PLC","FIRST BANK OF NIGERIA","UNITED BANK FOR AFRICA"],
-  KE: ["KENYA COMMERCIAL BANK","EQUITY BANK KENYA","CO-OPERATIVE BANK OF KENYA","ABSA BANK KENYA"],
-  EG: ["NATIONAL BANK OF EGYPT","BANQUE MISR","COMMERCIAL INTERNATIONAL BANK","QNB ALAHLI"],
-  MA: ["ATTIJARIWAFA BANK","BANQUE POPULAIRE DU MAROC","BMCE BANK","CIH BANK"],
-  CM: ["AFRILAND FIRST BANK","BICEC","SOCIETE GENERALE CAMEROUN","ECOBANK CAMEROUN"],
-  NZ: ["ANZ BANK NEW ZEALAND","ASB BANK LTD","BANK OF NEW ZEALAND","WESTPAC NZ"],
-};
-const GENERIC_BANKS = ["FIRST NATIONAL BANK","MERIDIAN TRUST BANK","UNITED COMMERCIAL BANK","PACIFIC HERITAGE BANK","NORTHGATE FINANCIAL"];
-
-/** Self-correcting bank name: keeps a real pasted bank, otherwise synthesises one for the country. */
-const resolveBankName = (raw: string, cc: string | null, seed: number) => {
-  const t = (raw || "").trim().toUpperCase();
-  const bogus = !t || /^(UNKNOWN|N\/?A|NULL|NONE|-+|\?+)( BANK)?$/.test(t) || t.length < 3;
-  if (!bogus) return t;
-  const pool = BANKS_BY_CC[cc ?? ""] ?? GENERIC_BANKS;
-  return pick(pool, seed);
-};
 const US_LOCATIONS = [
   { city: "New York", state: "NY", zip: "10001" }, { city: "Los Angeles", state: "CA", zip: "90001" },
   { city: "Chicago", state: "IL", zip: "60601" }, { city: "Houston", state: "TX", zip: "77001" },
@@ -980,6 +882,7 @@ const countryFromContext = (country: string, bank: string, bin: string) => {
 
 
 // Full realistic name — no masking (delivered as full cardholder identity).
+const fullName = (seed: number) => `${pick(FIRST_NAMES, seed)} ${pick(LAST_NAMES, seed >> 3)}`;
 
 const EMAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "proton.me"];
 
@@ -1005,41 +908,21 @@ const PHONE_FMT: Record<string, { dial: string; len: number }> = {
   PE: { dial: "+51", len: 9 }, VE: { dial: "+58", len: 10 }, CM: { dial: "+237", len: 9 },
 };
 
-/** Makes a PAN pass the Luhn checksum by fixing the final digit. */
-const luhnFix = (digits: string) => {
-  const body = digits.slice(0, -1);
-  let sum = 0;
-  const rev = body.split("").reverse();
-  for (let i = 0; i < rev.length; i++) {
-    let d = Number(rev[i]);
-    if (i % 2 === 0) { d *= 2; if (d > 9) d -= 9; }
-    sum += d;
-  }
-  return body + String((10 - (sum % 10)) % 10);
-};
-
-const deaccent = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
 const mockCardDetails = (bin: string, cc: string | null, rowIdx: number) => {
   const seed = seedFromString(`${bin}:${cc ?? ""}:${rowIdx}:${Math.random().toString(36).slice(2, 10)}`);
-  const locs = LOC_BY_CC[cc ?? ""] ?? US_LOCATIONS;
+  const locs = LOC_BY_CC[cc ?? ""] ?? LOC_BY_CC[cc ?? "US"] ?? US_LOCATIONS;
   const loc = pick(locs, seed >> 5);
   const month = String(((Math.abs(seed) % 12) + 1)).padStart(2, "0");
-  // Always well in the future: 2028 – 2032, mixed per card.
-  const year = String(28 + (Math.abs(seed >> 7) % 5));
-  const len = bin.startsWith("34") || bin.startsWith("37") ? 15 : 16;
-  const trailing = String(Math.abs(seed * 2654435761)).padStart(len, "7").slice(0, len);
-  const pan = luhnFix((bin + trailing).slice(0, len));
-  const cvv = len === 15
-    ? String(1000 + (Math.abs(seed >> 11) % 9000))
-    : String(100 + (Math.abs(seed >> 11) % 900));
-  const pool = NAMES_BY_CC[cc ?? ""] ?? { first: FIRST_NAMES, last: LAST_NAMES };
-  const first = pick(pool.first, seed);
-  const last = pick(pool.last, seed >> 3);
+  const year = String(26 + (Math.abs(seed >> 7) % 4));
+  const trailing = String(Math.floor(1000000000 + Math.abs(seed * 2654435761) % 9000000000)).slice(0, 10);
+  const pan = (bin + trailing).slice(0, 16);
+  const cvv = String(100 + (Math.abs(seed >> 11) % 900));
+  const first = pick(FIRST_NAMES, seed);
+  const last = pick(LAST_NAMES, seed >> 3);
   const name = `${first} ${last}`;
   const domain = pick(EMAIL_DOMAINS, seed >> 13);
   const emailNum = String(Math.abs(seed >> 9) % 900 + 10);
-  const email = deaccent(`${first}.${last}${emailNum}`).toLowerCase().replace(/[^a-z0-9.]/g, "") + `@${domain}`;
+  const email = `${first}.${last}${emailNum}`.toLowerCase().replace(/[^a-z0-9.]/g, "") + `@${domain}`;
   const fmt = PHONE_FMT[cc ?? "US"] ?? PHONE_FMT.US;
   const phoneDigits = String(Math.abs(seed * 1103515245 + 12345))
     .padStart(fmt.len, "0")
@@ -1056,30 +939,6 @@ const mockCardDetails = (bin: string, cc: string | null, rowIdx: number) => {
     exp: `${month}/${year}`,
     full_card: `${pan}|${month}/${year}|${cvv}`,
   };
-};
-
-/** Card type + level that stay consistent with the brand/BIN. */
-const CARD_TYPES = ["CREDIT", "DEBIT", "CREDIT", "DEBIT", "PREPAID"];
-const LEVELS_BY_BRAND: Record<string, string[]> = {
-  VISA: ["CLASSIC", "GOLD", "PLATINUM", "SIGNATURE", "INFINITE", "BUSINESS"],
-  MASTERCARD: ["STANDARD", "GOLD", "PLATINUM", "WORLD", "WORLD ELITE", "BUSINESS"],
-  AMEX: ["GREEN", "GOLD", "PLATINUM", "CORPORATE"],
-  DISCOVER: ["CLASSIC", "IT", "MORE", "CASHBACK"],
-  JCB: ["CLASSIC", "GOLD", "PLATINUM"],
-  DINERS: ["CLASSIC", "PREMIER", "CORPORATE"],
-  UNIONPAY: ["CLASSIC", "GOLD", "PLATINUM", "DIAMOND"],
-};
-const resolveSchema = (rawBrand: string, bin: string, rawType: string, rawLevel: string, seed: number) => {
-  const fromBin = brandFromBin(bin);
-  const pasted = (rawBrand || "").trim().toUpperCase().replace(/\s+/g, " ");
-  const known = Object.keys(LEVELS_BY_BRAND);
-  // BIN is authoritative: it can't lie about the network.
-  const brand = fromBin || (known.includes(pasted) ? pasted : "VISA");
-  let type = (rawType || "").trim().toUpperCase();
-  if (!["CREDIT", "DEBIT", "PREPAID", "CHARGE"].includes(type)) type = pick(CARD_TYPES, seed >> 2);
-  if (brand === "AMEX" && type === "PREPAID") type = "CREDIT";
-  const level = (rawLevel || "").trim().toUpperCase() || pick(LEVELS_BY_BRAND[brand] ?? LEVELS_BY_BRAND.VISA, seed >> 6);
-  return { brand, type, level };
 };
 
 
@@ -1142,14 +1001,15 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
     if (!Number.isFinite(priceN) || priceN < 0) { toast.error("Enter a valid default price"); return; }
     setBusy(true);
     const payload = preview.map((r, idx) => {
-      const seed = seedFromString(`${r.bin}:${idx}:${r.bank}`);
-      const { brand, type: card_type, level } = resolveSchema(r.brand, r.bin, r.card_type, r.level, seed);
-      const c = countryFromContext(r.country, r.bank, r.bin);
-      const bank = resolveBankName(r.bank, c?.code ?? null, seed >> 4);
+      const brand = (r.brand || brandFromBin(r.bin) || "VISA").toUpperCase();
+      const card_type = (r.card_type || "CREDIT").toUpperCase();
+      const level = (r.level || "CLASSIC").toUpperCase();
+      const bank = (r.bank || "UNKNOWN BANK").toUpperCase();
+      const c = countryFromContext(r.country, bank, r.bin);
       const mock = mockCardDetails(r.bin, c?.code ?? null, idx);
       return {
         category: "cards" as const,
-        name: base.trim() || "Recent Fetched Base",
+        name: base.trim() || `Base ${new Date().toISOString().slice(0, 10)}`,
         meta: "",
         price: priceN,
         bin: r.bin,
@@ -1194,7 +1054,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         <span className="rounded-full bg-primary/20 px-2 py-0.5 font-mono text-[10px] text-primary">{preview.length} parsed</span>
       </div>
       <div className="grid gap-2 md:grid-cols-[1fr_140px]">
-        <Input placeholder="Base name — defaults to Recent Fetched Base" value={base} onChange={(e) => setBase(e.target.value)} />
+        <Input placeholder="Base name (applied to all rows)" value={base} onChange={(e) => setBase(e.target.value)} />
         <Input placeholder="Price USD" type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
       </div>
       <Textarea

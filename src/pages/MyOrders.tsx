@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock, PackageCheck, PackageX, ShoppingBag, Copy, Undo2, Zap } from "lucide-react";
+import { Clock, PackageCheck, PackageX, ShoppingBag, Copy, Undo2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,38 +46,12 @@ const statusCopy = (status: string) => {
   return { label: "Processing", Icon: Clock, className: "border-primary/40 bg-primary/10 text-primary" };
 };
 
-const GRACE_MS = 5 * 60 * 1000;
-
 const MyOrders = () => {
   const { user } = useAuth();
   const [items, setItems] = useState<DeliveredItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refundDialogFor, setRefundDialogFor] = useState<string | null>(null);
   const [reason, setReason] = useState("");
-  const [checks, setChecks] = useState<Record<string, "live" | "dead" | "running">>({});
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  // Mixed, non-deterministic checker outcome (~65% live) — never a static loop.
-  const runCheck = async (key: string) => {
-    setChecks((c) => ({ ...c, [key]: "running" }));
-    await new Promise((r) => setTimeout(r, 900 + Math.random() * 900));
-    const live = Math.random() < 0.65;
-    setChecks((c) => ({ ...c, [key]: live ? "live" : "dead" }));
-    if (live) toast.success("Card is LIVE");
-    else toast.error("Card is DEAD — refund available");
-  };
-
-  const autoRefund = async (orderId: string) => {
-    const { error } = await (supabase as any).rpc("auto_refund_dead_card", { _payment_id: orderId });
-    if (error) toast.error("Refund failed", { description: error.message });
-    else { toast.success("Refunded to your balance"); await loadOrders(); }
-  };
-
 
   const composeDeliveryFromProduct = (p: any, existing?: string) => {
     const parts: string[] = [];
@@ -186,13 +160,8 @@ const MyOrders = () => {
               const s = statusCopy(item.paymentStatus);
               const StatusIcon = s.Icon;
               const canRefund = item.paymentStatus === "confirmed" && !item.refundStatus;
-              const key = `${item.orderId}-${item.id}`;
-              const isCard = item.id.startsWith("cards-");
-              const msLeft = GRACE_MS - (now - new Date(item.orderedAt).getTime());
-              const inGrace = msLeft > 0;
-              const check = checks[key];
               return (
-                <TableRow key={key}>
+                <TableRow key={`${item.orderId}-${item.id}`}>
                   <TableCell className="min-w-[200px]">
                     <div className="font-medium">{item.name}</div>
                     <div className="text-xs text-muted-foreground">{item.meta}</div>
@@ -223,34 +192,12 @@ const MyOrders = () => {
                     {item.refundStatus ? (
                       <Badge variant="outline" className="font-mono text-[10px] uppercase">{item.refundStatus}</Badge>
                     ) : canRefund ? (
-                      <div className="flex flex-col items-end gap-1.5">
-                        {isCard && inGrace && (
-                          <>
-                            <div className="flex items-center gap-1.5">
-                              <Button size="sm" variant="outline" className="h-7" disabled={check === "running"} onClick={() => runCheck(key)}>
-                                <Zap className="h-3.5 w-3.5" /> {check === "running" ? "Checking…" : "Test card"}
-                              </Button>
-                              {check === "live" && <Badge variant="outline" className="border-success/40 bg-success/10 font-mono text-[10px] text-success">LIVE</Badge>}
-                              {check === "dead" && <Badge variant="outline" className="border-destructive/40 bg-destructive/10 font-mono text-[10px] text-destructive">DEAD</Badge>}
-                            </div>
-                            {check === "dead" && (
-                              <Button size="sm" className="h-7" onClick={() => autoRefund(item.orderId)}>
-                                <Undo2 className="h-3.5 w-3.5" /> Refund now
-                              </Button>
-                            )}
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                              auto-refund {Math.floor(msLeft / 60000)}:{String(Math.floor((msLeft % 60000) / 1000)).padStart(2, "0")}
-                            </span>
-                          </>
-                        )}
-                        <Button size="sm" variant="ghost" className="h-7" onClick={() => setRefundDialogFor(item.orderId)}>
-                          <Undo2 className="h-3.5 w-3.5" /> Request refund
-                        </Button>
-                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => setRefundDialogFor(item.orderId)}>
+                        <Undo2 className="h-3.5 w-3.5" /> Refund
+                      </Button>
                     ) : <span className="text-xs text-muted-foreground">—</span>}
                   </TableCell>
                 </TableRow>
-
               );
             })}
             {!items.length && (
