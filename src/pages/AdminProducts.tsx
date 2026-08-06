@@ -950,6 +950,50 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
   const [price, setPrice] = useState("20");
   const [busy, setBusy] = useState(false);
 
+  // ---- token classification: never let a bank land in "level", a country in "bank", etc.
+  const BRAND_WORDS = ["VISA", "MASTERCARD", "MASTER CARD", "AMEX", "AMERICAN EXPRESS", "DISCOVER", "JCB", "UNIONPAY", "CHINA UNIONPAY", "MAESTRO", "DINERS", "DINERS CLUB", "ELO", "MIR", "RUPAY", "HIPERCARD"];
+  const TYPE_WORDS = ["DEBIT", "CREDIT", "CHARGE CARD", "CHARGE", "PREPAID"];
+  const LEVEL_WORDS = ["CLASSIC", "GOLD", "PLATINUM", "TITANIUM", "SIGNATURE", "INFINITE", "WORLD ELITE", "WORLD", "BUSINESS", "CORPORATE", "STANDARD", "TRADITIONAL", "ELECTRON", "PREMIUM", "PREMIER", "BLACK", "REWARDS", "PURCHASING", "FLEET", "PLUS", "ELITE", "GREEN", "SILVER"];
+
+  const classify = (tokens: string[]) => {
+    const out = { brand: "", card_type: "", level: "", bank: "", country: "" };
+    const leftovers: string[] = [];
+    for (const rawTok of tokens) {
+      const tok = rawTok.trim();
+      if (!tok) continue;
+      const U = tok.toUpperCase();
+      if (!out.brand && BRAND_WORDS.some((w) => U === w || U.startsWith(`${w} `))) {
+        out.brand = BRAND_WORDS.find((w) => U === w || U.startsWith(`${w} `))!;
+        const rest = U.replace(out.brand, "").trim();
+        if (rest) leftovers.push(rest);
+        continue;
+      }
+      const typeHit = TYPE_WORDS.find((w) => new RegExp(`\\b${w}\\b`).test(U));
+      const levelHits = LEVEL_WORDS.filter((w) => new RegExp(`\\b${w}\\b`).test(U));
+      const isCountry = !!resolveCountry(tok);
+      // A short token that is only type/level words is metadata; anything longer is a bank name.
+      const wordCount = U.split(/\s+/).length;
+      if (typeHit && wordCount <= 3 && !out.card_type) {
+        out.card_type = typeHit;
+        const lv = levelHits.filter((w) => w !== typeHit);
+        if (lv.length && !out.level) out.level = lv.join(" ");
+        continue;
+      }
+      if (levelHits.length && wordCount <= 3 && !out.level && !isCountry) {
+        out.level = levelHits.join(" ");
+        continue;
+      }
+      if (isCountry && !out.country) { out.country = tok; continue; }
+      leftovers.push(tok);
+    }
+    // remaining longest token is the bank
+    if (leftovers.length) {
+      const bankTok = leftovers.slice().sort((a, b) => b.length - a.length)[0];
+      out.bank = bankTok;
+    }
+    return out;
+  };
+
   const parse = (text: string) => {
     const rawLines = text.split(/\r?\n/).map((l) => l.trim());
     const lines = rawLines.filter(Boolean);
@@ -965,15 +1009,14 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         if (/^bin\b/i.test(line) && /brand|type|bank|country/i.test(line)) continue;
         const parts = line.split(/\t|\s*\|\s*|,\s*|\s{2,}/).map((p) => p.trim()).filter(Boolean);
         if (!parts.length) continue;
-        const [bin, brand = "", card_type = "", level = "", bank = "", country = ""] = parts;
+        const [bin, ...rest] = parts;
         if (!/^\d{4,}/.test(bin)) continue;
-        rows.push({ bin: bin.replace(/\D/g, "").slice(0, 6), brand, card_type, level, bank, country });
+        rows.push({ bin: bin.replace(/\D/g, "").slice(0, 6), ...classify(rest) });
       }
       return rows;
     }
 
-    // Field-per-line mode: walk through tokens, whenever we hit a BIN start a 6-field record.
-    // Order expected: BIN, BRAND, TYPE, LEVEL, BANK, COUNTRY. Missing tail fields tolerated.
+    // Field-per-line mode: walk through tokens, whenever we hit a BIN start a record.
     let i = 0;
     while (i < lines.length) {
       const l = lines[i];
@@ -986,14 +1029,14 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         fields.push(lines[j]);
         j++;
       }
-      const [brand = "", card_type = "", level = "", bank = "", country = ""] = fields;
-      rows.push({ bin, brand, card_type, level, bank, country });
+      rows.push({ bin, ...classify(fields) });
       i = j;
     }
     return rows;
   };
 
   const preview = useMemo(() => parse(raw), [raw]);
+
 
   const importNow = async () => {
     if (!preview.length) { toast.error("Nothing to import"); return; }
