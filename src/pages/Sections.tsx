@@ -314,10 +314,26 @@ export const Cards = () => {
     };
   }, [products]);
 
+  const clearBase = () => {
+    setDraft((d) => ({ ...d, base: "" }));
+    setFilters((f) => ({ ...f, base: "" }));
+    setPage(1);
+    navigate("/cards", { replace: true });
+  };
+
   return (
     <AppLayout>
+      {filters.base && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 animate-fade-up">
+          <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Filtered by base</span>
+          <span className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 font-mono text-xs text-primary">{filters.base}</span>
+          <Button size="sm" variant="secondary" className="ml-auto" onClick={clearBase}>View all cards</Button>
+        </div>
+      )}
+
       {/* Search panel */}
       <section className="mb-5 rounded-xl border border-border bg-card p-4 md:p-5 animate-fade-up">
+
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-7">
           <Field label="Bin"><Input placeholder="xxx,xxx,xxx" value={draft.bin} onChange={(e) => setDraft({ ...draft, bin: e.target.value })} /></Field>
           <Field label="Country"><FilterSelect placeholder="Any country" value={draft.country} options={opts.country} onChange={(v) => setDraft({ ...draft, country: v })} /></Field>

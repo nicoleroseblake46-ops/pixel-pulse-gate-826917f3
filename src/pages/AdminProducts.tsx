@@ -881,6 +881,40 @@ const countryFromContext = (country: string, bank: string, bin: string) => {
 };
 
 
+// ---- Live BIN lookup (binlist) with in-memory cache + graceful offline fallback.
+export type BinInfo = { brand?: string; card_type?: string; level?: string; bank?: string; country_code?: string };
+const BIN_CACHE = new Map<string, BinInfo | null>();
+
+const binLookup = async (bin: string): Promise<BinInfo | null> => {
+  const key = bin.slice(0, 6);
+  if (!/^\d{6}$/.test(key)) return null;
+  if (BIN_CACHE.has(key)) return BIN_CACHE.get(key) ?? null;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const res = await fetch(`https://lookup.binlist.net/${key}`, {
+      headers: { "Accept-Version": "3" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) { BIN_CACHE.set(key, null); return null; }
+    const j = await res.json();
+    const info: BinInfo = {
+      brand: (j?.scheme ?? "").toUpperCase() || undefined,
+      card_type: (j?.type ?? "").toUpperCase() || undefined,
+      level: (j?.brand ?? "").toUpperCase() || undefined,
+      bank: (j?.bank?.name ?? "").toUpperCase() || undefined,
+      country_code: (j?.country?.alpha2 ?? "").toUpperCase() || undefined,
+    };
+    BIN_CACHE.set(key, info);
+    return info;
+  } catch {
+    BIN_CACHE.set(key, null);
+    return null;
+  }
+};
+
+
 // Full realistic name — no masking (delivered as full cardholder identity).
 const fullName = (seed: number) => `${pick(FIRST_NAMES, seed)} ${pick(LAST_NAMES, seed >> 3)}`;
 
@@ -950,6 +984,50 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
   const [price, setPrice] = useState("20");
   const [busy, setBusy] = useState(false);
 
+  // ---- token classification: never let a bank land in "level", a country in "bank", etc.
+  const BRAND_WORDS = ["VISA", "MASTERCARD", "MASTER CARD", "AMEX", "AMERICAN EXPRESS", "DISCOVER", "JCB", "UNIONPAY", "CHINA UNIONPAY", "MAESTRO", "DINERS", "DINERS CLUB", "ELO", "MIR", "RUPAY", "HIPERCARD"];
+  const TYPE_WORDS = ["DEBIT", "CREDIT", "CHARGE CARD", "CHARGE", "PREPAID"];
+  const LEVEL_WORDS = ["CLASSIC", "GOLD", "PLATINUM", "TITANIUM", "SIGNATURE", "INFINITE", "WORLD ELITE", "WORLD", "BUSINESS", "CORPORATE", "STANDARD", "TRADITIONAL", "ELECTRON", "PREMIUM", "PREMIER", "BLACK", "REWARDS", "PURCHASING", "FLEET", "PLUS", "ELITE", "GREEN", "SILVER"];
+
+  const classify = (tokens: string[]) => {
+    const out = { brand: "", card_type: "", level: "", bank: "", country: "" };
+    const leftovers: string[] = [];
+    for (const rawTok of tokens) {
+      const tok = rawTok.trim();
+      if (!tok) continue;
+      const U = tok.toUpperCase();
+      if (!out.brand && BRAND_WORDS.some((w) => U === w || U.startsWith(`${w} `))) {
+        out.brand = BRAND_WORDS.find((w) => U === w || U.startsWith(`${w} `))!;
+        const rest = U.replace(out.brand, "").trim();
+        if (rest) leftovers.push(rest);
+        continue;
+      }
+      const typeHit = TYPE_WORDS.find((w) => new RegExp(`\\b${w}\\b`).test(U));
+      const levelHits = LEVEL_WORDS.filter((w) => new RegExp(`\\b${w}\\b`).test(U));
+      const isCountry = !!resolveCountry(tok);
+      // A short token that is only type/level words is metadata; anything longer is a bank name.
+      const wordCount = U.split(/\s+/).length;
+      if (typeHit && wordCount <= 3 && !out.card_type) {
+        out.card_type = typeHit;
+        const lv = levelHits.filter((w) => w !== typeHit);
+        if (lv.length && !out.level) out.level = lv.join(" ");
+        continue;
+      }
+      if (levelHits.length && wordCount <= 3 && !out.level && !isCountry) {
+        out.level = levelHits.join(" ");
+        continue;
+      }
+      if (isCountry && !out.country) { out.country = tok; continue; }
+      leftovers.push(tok);
+    }
+    // remaining longest token is the bank
+    if (leftovers.length) {
+      const bankTok = leftovers.slice().sort((a, b) => b.length - a.length)[0];
+      out.bank = bankTok;
+    }
+    return out;
+  };
+
   const parse = (text: string) => {
     const rawLines = text.split(/\r?\n/).map((l) => l.trim());
     const lines = rawLines.filter(Boolean);
@@ -965,15 +1043,14 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         if (/^bin\b/i.test(line) && /brand|type|bank|country/i.test(line)) continue;
         const parts = line.split(/\t|\s*\|\s*|,\s*|\s{2,}/).map((p) => p.trim()).filter(Boolean);
         if (!parts.length) continue;
-        const [bin, brand = "", card_type = "", level = "", bank = "", country = ""] = parts;
+        const [bin, ...rest] = parts;
         if (!/^\d{4,}/.test(bin)) continue;
-        rows.push({ bin: bin.replace(/\D/g, "").slice(0, 6), brand, card_type, level, bank, country });
+        rows.push({ bin: bin.replace(/\D/g, "").slice(0, 6), ...classify(rest) });
       }
       return rows;
     }
 
-    // Field-per-line mode: walk through tokens, whenever we hit a BIN start a 6-field record.
-    // Order expected: BIN, BRAND, TYPE, LEVEL, BANK, COUNTRY. Missing tail fields tolerated.
+    // Field-per-line mode: walk through tokens, whenever we hit a BIN start a record.
     let i = 0;
     while (i < lines.length) {
       const l = lines[i];
@@ -986,8 +1063,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         fields.push(lines[j]);
         j++;
       }
-      const [brand = "", card_type = "", level = "", bank = "", country = ""] = fields;
-      rows.push({ bin, brand, card_type, level, bank, country });
+      rows.push({ bin, ...classify(fields) });
       i = j;
     }
     return rows;
@@ -995,18 +1071,30 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
 
   const preview = useMemo(() => parse(raw), [raw]);
 
+
   const importNow = async () => {
     if (!preview.length) { toast.error("Nothing to import"); return; }
     const priceN = Number(price);
     if (!Number.isFinite(priceN) || priceN < 0) { toast.error("Enter a valid default price"); return; }
     setBusy(true);
+
+    // Online BIN lookup fills anything the paste didn't state (country, brand, type, level, bank).
+    const uniqueBins = Array.from(new Set(preview.map((r) => r.bin)));
+    const lookups = new Map<string, BinInfo>();
+    for (const b of uniqueBins.slice(0, 120)) {
+      const info = await binLookup(b);
+      if (info) lookups.set(b, info);
+    }
+
     const payload = preview.map((r, idx) => {
-      const brand = (r.brand || brandFromBin(r.bin) || "VISA").toUpperCase();
-      const card_type = (r.card_type || "CREDIT").toUpperCase();
-      const level = (r.level || "CLASSIC").toUpperCase();
-      const bank = (r.bank || "UNKNOWN BANK").toUpperCase();
-      const c = countryFromContext(r.country, bank, r.bin);
+      const info = lookups.get(r.bin);
+      const brand = (r.brand || info?.brand || brandFromBin(r.bin) || "VISA").toUpperCase();
+      const card_type = (r.card_type || info?.card_type || "CREDIT").toUpperCase();
+      const level = (r.level || info?.level || "CLASSIC").toUpperCase();
+      const bank = (r.bank || info?.bank || "UNKNOWN BANK").toUpperCase();
+      const c = countryFromContext(r.country || info?.country_code || "", bank, r.bin);
       const mock = mockCardDetails(r.bin, c?.code ?? null, idx);
+
       return {
         category: "cards" as const,
         name: base.trim() || `Base ${new Date().toISOString().slice(0, 10)}`,
