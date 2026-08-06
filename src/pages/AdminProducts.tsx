@@ -881,6 +881,40 @@ const countryFromContext = (country: string, bank: string, bin: string) => {
 };
 
 
+// ---- Live BIN lookup (binlist) with in-memory cache + graceful offline fallback.
+export type BinInfo = { brand?: string; card_type?: string; level?: string; bank?: string; country_code?: string };
+const BIN_CACHE = new Map<string, BinInfo | null>();
+
+const binLookup = async (bin: string): Promise<BinInfo | null> => {
+  const key = bin.slice(0, 6);
+  if (!/^\d{6}$/.test(key)) return null;
+  if (BIN_CACHE.has(key)) return BIN_CACHE.get(key) ?? null;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const res = await fetch(`https://lookup.binlist.net/${key}`, {
+      headers: { "Accept-Version": "3" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) { BIN_CACHE.set(key, null); return null; }
+    const j = await res.json();
+    const info: BinInfo = {
+      brand: (j?.scheme ?? "").toUpperCase() || undefined,
+      card_type: (j?.type ?? "").toUpperCase() || undefined,
+      level: (j?.brand ?? "").toUpperCase() || undefined,
+      bank: (j?.bank?.name ?? "").toUpperCase() || undefined,
+      country_code: (j?.country?.alpha2 ?? "").toUpperCase() || undefined,
+    };
+    BIN_CACHE.set(key, info);
+    return info;
+  } catch {
+    BIN_CACHE.set(key, null);
+    return null;
+  }
+};
+
+
 // Full realistic name — no masking (delivered as full cardholder identity).
 const fullName = (seed: number) => `${pick(FIRST_NAMES, seed)} ${pick(LAST_NAMES, seed >> 3)}`;
 
