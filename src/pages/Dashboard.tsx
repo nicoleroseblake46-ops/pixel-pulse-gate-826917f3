@@ -101,15 +101,32 @@ const Dashboard = () => {
   }, []);
 
   const grouped = useMemo(() => {
+    // Only real base drops — filter out generic brand/type/country labels
+    const JUNK = new Set([
+      "au","us","usa","uk","ca","eu","de","fr","it","es","nl","br","mx","in","cn","jp","ru","za","ng","ke",
+      "visa","mastercard","amex","discover","jcb","unionpay","maestro",
+      "visa credit","visa debit","mastercard credit","mastercard debit","credit","debit","classic","gold",
+      "platinum","business","standard","prepaid","world","signature","infinite","corporate","unknown","other",
+    ]);
+    const isRealBase = (name: string) => {
+      const n = (name ?? "").trim();
+      if (!n) return false;
+      if (JUNK.has(n.toLowerCase())) return false;
+      // keep anything explicitly labelled a base or carrying a date/number tag
+      return /base/i.test(n) || /\d{4}-\d{1,2}(-\d{1,2})?/.test(n) || /\d{3,}/.test(n);
+    };
+
     // Dedupe by base name — newest occurrence wins (bases already sorted desc by created_at)
     const seen = new Set<string>();
     const uniq: BaseItem[] = [];
     for (const b of bases) {
+      if (!isRealBase(b.name)) continue;
       const key = `${b.category}:${(b.name ?? "").trim().toLowerCase()}`;
       if (!key || seen.has(key)) continue;
       seen.add(key);
       uniq.push(b);
     }
+
     const out: { label: string; items: BaseItem[] }[] = [];
     for (const b of uniq) {
       const lbl = bucketLabel(b.created_at);
