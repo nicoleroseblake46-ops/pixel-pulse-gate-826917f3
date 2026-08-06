@@ -390,6 +390,7 @@ export type Database = {
       }
       approve_payment: { Args: { _payment_id: string }; Returns: undefined }
       assign_admin_role_by_email: { Args: { _email: string }; Returns: Json }
+      auto_refund_dead_card: { Args: { _payment_id: string }; Returns: number }
       charge_checker_fee: {
         Args: { _count: number; _price_per_check: number }
         Returns: number
