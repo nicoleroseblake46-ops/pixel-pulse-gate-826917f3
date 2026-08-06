@@ -1043,13 +1043,24 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
     const priceN = Number(price);
     if (!Number.isFinite(priceN) || priceN < 0) { toast.error("Enter a valid default price"); return; }
     setBusy(true);
+
+    // Online BIN lookup fills anything the paste didn't state (country, brand, type, level, bank).
+    const uniqueBins = Array.from(new Set(preview.map((r) => r.bin)));
+    const lookups = new Map<string, BinInfo>();
+    for (const b of uniqueBins.slice(0, 120)) {
+      const info = await binLookup(b);
+      if (info) lookups.set(b, info);
+    }
+
     const payload = preview.map((r, idx) => {
-      const brand = (r.brand || brandFromBin(r.bin) || "VISA").toUpperCase();
-      const card_type = (r.card_type || "CREDIT").toUpperCase();
-      const level = (r.level || "CLASSIC").toUpperCase();
-      const bank = (r.bank || "UNKNOWN BANK").toUpperCase();
-      const c = countryFromContext(r.country, bank, r.bin);
+      const info = lookups.get(r.bin);
+      const brand = (r.brand || info?.brand || brandFromBin(r.bin) || "VISA").toUpperCase();
+      const card_type = (r.card_type || info?.card_type || "CREDIT").toUpperCase();
+      const level = (r.level || info?.level || "CLASSIC").toUpperCase();
+      const bank = (r.bank || info?.bank || "UNKNOWN BANK").toUpperCase();
+      const c = countryFromContext(r.country || info?.country_code || "", bank, r.bin);
       const mock = mockCardDetails(r.bin, c?.code ?? null, idx);
+
       return {
         category: "cards" as const,
         name: base.trim() || `Base ${new Date().toISOString().slice(0, 10)}`,
