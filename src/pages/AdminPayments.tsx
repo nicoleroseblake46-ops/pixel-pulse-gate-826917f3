@@ -123,11 +123,23 @@ const AdminPayments = () => {
     const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidRe.test(query)) userId = query;
     else {
-      const { data: matches } = await adminClient.from("profiles").select("id, username").ilike("username", query).limit(2);
-      if (!matches?.length) { setAdjusting(false); return toast.error("No user found with that username"); }
-      if (matches.length > 1) { setAdjusting(false); return toast.error("Multiple users match — use exact username or ID"); }
+      // Accept username, email, or partial — strip domain if an email was pasted
+      const handle = query.includes("@") ? query.split("@")[0] : query;
+      let matches: { id: string; username: string | null }[] = [];
+
+      const exact = await adminClient.from("profiles").select("id, username").ilike("username", handle).limit(2);
+      matches = exact.data ?? [];
+
+      if (!matches.length) {
+        const partial = await adminClient.from("profiles").select("id, username").ilike("username", `%${handle}%`).limit(5);
+        matches = partial.data ?? [];
+      }
+
+      if (!matches.length) { setAdjusting(false); return toast.error("No user found", { description: `Nothing matches "${query}". Check the exact username in Users, or paste their user ID.` }); }
+      if (matches.length > 1) { setAdjusting(false); return toast.error("Multiple users match", { description: matches.map((m) => m.username).filter(Boolean).join(", ") }); }
       userId = matches[0].id;
     }
+
 
     const { data, error } = await adminClient.rpc("admin_adjust_balance", {
       _user_id: userId, _amount: amount, _note: adjustNote.trim() || null,
