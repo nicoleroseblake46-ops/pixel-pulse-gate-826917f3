@@ -56,7 +56,7 @@ type VendorOpt = { id: string; handle: string; name: string };
 
 const AdminProducts = () => {
   const { isAdmin, loading: adminLoading } = useAdmin();
-  const { settings, salesHidden, setSetting } = useAppSettings();
+  const { settings, setSetting } = useAppSettings();
   const currentMinDeposit = Number(settings.min_deposit ?? 20);
   const [minDepositInput, setMinDepositInput] = useState<string>(String(currentMinDeposit));
   useEffect(() => { setMinDepositInput(String(Number(settings.min_deposit ?? 20))); }, [settings.min_deposit]);
