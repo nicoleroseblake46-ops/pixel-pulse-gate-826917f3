@@ -442,7 +442,7 @@ const AdminProducts = () => {
                       </div>
                       <Input placeholder="State / region" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
                       <Input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-                      <Textarea placeholder="Delivery credentials (host:port:user:pass) — delivered on purchase" value={form.extras} onChange={(e) => setForm({ ...form, extras: e.target.value })} className="md:col-span-2 font-mono" />
+                      <Textarea placeholder="Delivery — what the buyer receives (e.g. host:port:user:pass)" value={form.extras} onChange={(e) => setForm({ ...form, extras: e.target.value })} className="md:col-span-2 font-mono" />
                     </div>
                   )}
 
