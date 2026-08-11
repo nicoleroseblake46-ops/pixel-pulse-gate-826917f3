@@ -60,7 +60,7 @@ const AdminProducts = () => {
   const currentMinDeposit = Number(settings.min_deposit ?? 20);
   const [minDepositInput, setMinDepositInput] = useState<string>(String(currentMinDeposit));
   useEffect(() => { setMinDepositInput(String(Number(settings.min_deposit ?? 20))); }, [settings.min_deposit]);
-  const [active, setActive] = useState<ProductCategory>("sales");
+  const [active, setActive] = useState<ProductCategory>("cards");
   const [items, setItems] = useState<Product[]>([]);
   const [vendors, setVendors] = useState<VendorOpt[]>([]);
   const [loading, setLoading] = useState(true);
