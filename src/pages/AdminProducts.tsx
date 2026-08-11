@@ -301,6 +301,7 @@ const AdminProducts = () => {
                     <Input placeholder="Sort order" type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} />
                   </div>
 
+                  {active === "tools" && (
                   <div className="rounded-lg border border-border/60 bg-secondary/30 p-3">
                     <div className="mb-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">Product image</div>
                     <div className="flex flex-wrap items-center gap-3">
