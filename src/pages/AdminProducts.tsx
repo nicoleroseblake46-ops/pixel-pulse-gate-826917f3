@@ -123,7 +123,7 @@ const AdminProducts = () => {
       bin: isCards ? form.bin.trim() || null : null,
       country: form.country.trim() || null,
       state: form.state.trim() || null,
-      city: (isCards || active === "socks") ? form.city.trim() || null : null,
+      city: form.city.trim() || null,
       brand: form.brand.trim() || null,
       card_type: form.card_type.trim() || null,
       bank: form.bank.trim() || null,
