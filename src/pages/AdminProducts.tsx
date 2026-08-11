@@ -339,6 +339,7 @@ const AdminProducts = () => {
                     </div>
                     <Input placeholder="Or paste image URL" value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} className="mt-2" />
                   </div>
+                  )}
 
                   {isCards && (
                     <>
