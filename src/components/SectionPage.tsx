@@ -18,7 +18,13 @@ export const SectionPage = ({ title, Icon, category }: Props) => {
   const { products, loading } = useProducts(category);
 
   const addItem = (item: typeof products[number]) => {
-    addToCart({ id: `${category}-${item.id}`, name: item.name, meta: item.meta, price: Number(item.price) });
+    addToCart({
+      id: `${category}-${item.id}`,
+      name: item.name,
+      meta: item.meta,
+      price: Number(item.price),
+      delivery: item.extras || undefined,
+    });
     toast.success("Added to cart", { description: item.name });
   };
 

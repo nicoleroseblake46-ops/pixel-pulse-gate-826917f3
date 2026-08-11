@@ -19,11 +19,10 @@ import { CountryFlag } from "@/components/CountryFlag";
 import { syncTelegram, productToUpsert } from "@/lib/site-sync";
 
 const categories: { value: ProductCategory; label: string; Icon: typeof TagIcon }[] = [
-  { value: "sales", label: "Sales", Icon: TagIcon },
   { value: "cards", label: "Cards", Icon: CreditCard },
   { value: "proxy", label: "Proxy", Icon: Network },
-  { value: "tools", label: "Tools", Icon: Wrench },
   { value: "rdp", label: "RDP", Icon: MonitorSmartphone },
+  { value: "tools", label: "Tools", Icon: Wrench },
 ];
 
 const emptyForm = {
@@ -57,11 +56,11 @@ type VendorOpt = { id: string; handle: string; name: string };
 
 const AdminProducts = () => {
   const { isAdmin, loading: adminLoading } = useAdmin();
-  const { settings, salesHidden, setSetting } = useAppSettings();
+  const { settings, setSetting } = useAppSettings();
   const currentMinDeposit = Number(settings.min_deposit ?? 20);
   const [minDepositInput, setMinDepositInput] = useState<string>(String(currentMinDeposit));
   useEffect(() => { setMinDepositInput(String(Number(settings.min_deposit ?? 20))); }, [settings.min_deposit]);
-  const [active, setActive] = useState<ProductCategory>("sales");
+  const [active, setActive] = useState<ProductCategory>("cards");
   const [items, setItems] = useState<Product[]>([]);
   const [vendors, setVendors] = useState<VendorOpt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +123,7 @@ const AdminProducts = () => {
       bin: isCards ? form.bin.trim() || null : null,
       country: form.country.trim() || null,
       state: form.state.trim() || null,
-      city: (isCards || active === "socks") ? form.city.trim() || null : null,
+      city: form.city.trim() || null,
       brand: form.brand.trim() || null,
       card_type: form.card_type.trim() || null,
       bank: form.bank.trim() || null,
@@ -135,7 +134,7 @@ const AdminProducts = () => {
       scheme: isCards ? form.scheme.trim() || null : null,
       level: form.level.trim() || null,
       country_code: form.country_code.trim() || null,
-      extras: (isCards || active === "socks") ? form.extras.trim() || null : null,
+      extras: form.extras.trim() || null,
       image_url: form.image_url.trim() || null,
       vendor_id: form.vendor_id || null,
       full_card: isCards ? form.full_card.trim() || null : null,
@@ -224,21 +223,6 @@ const AdminProducts = () => {
           </Button>
         </div>
 
-        {/* Site-wide toggles */}
-        <section className="glass rounded-xl border border-border p-4 md:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/40">
-                <EyeOff className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <div className="font-display text-base font-bold">Hide Sales section</div>
-                <p className="text-xs text-muted-foreground">When ON, the Sales page and sidebar link are hidden for regular users. Admins still see it.</p>
-              </div>
-            </div>
-            <Switch checked={salesHidden} onCheckedChange={(checked) => setSetting("sales_hidden", checked)} />
-          </div>
-        </section>
 
         {/* Minimum deposit setting */}
         <section className="glass rounded-xl border border-border p-4 md:p-5">
@@ -317,6 +301,7 @@ const AdminProducts = () => {
                     <Input placeholder="Sort order" type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} />
                   </div>
 
+                  {active === "tools" && (
                   <div className="rounded-lg border border-border/60 bg-secondary/30 p-3">
                     <div className="mb-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">Product image</div>
                     <div className="flex flex-wrap items-center gap-3">
@@ -354,6 +339,7 @@ const AdminProducts = () => {
                     </div>
                     <Input placeholder="Or paste image URL" value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} className="mt-2" />
                   </div>
+                  )}
 
                   {isCards && (
                     <>
@@ -433,7 +419,7 @@ const AdminProducts = () => {
                     </div>
                   )}
 
-                  {active === "socks" && (
+                  {active === "proxy" && (
                     <div className="grid gap-3 rounded-lg border border-border/60 bg-secondary/30 p-3 md:grid-cols-2">
                       <Input placeholder="Name / Label" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                       <Input placeholder="Type (Residential / Datacenter / Mobile / ISP)" value={form.card_type} onChange={(e) => setForm({ ...form, card_type: e.target.value })} />
@@ -456,7 +442,7 @@ const AdminProducts = () => {
                       </div>
                       <Input placeholder="State / region" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
                       <Input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-                      <Textarea placeholder="Delivery credentials (host:port:user:pass) — delivered on purchase" value={form.extras} onChange={(e) => setForm({ ...form, extras: e.target.value })} className="md:col-span-2 font-mono" />
+                      <Textarea placeholder="Delivery — what the buyer receives (e.g. host:port:user:pass)" value={form.extras} onChange={(e) => setForm({ ...form, extras: e.target.value })} className="md:col-span-2 font-mono" />
                     </div>
                   )}
 
