@@ -19,11 +19,10 @@ import { CountryFlag } from "@/components/CountryFlag";
 import { syncTelegram, productToUpsert } from "@/lib/site-sync";
 
 const categories: { value: ProductCategory; label: string; Icon: typeof TagIcon }[] = [
-  { value: "sales", label: "Sales", Icon: TagIcon },
   { value: "cards", label: "Cards", Icon: CreditCard },
   { value: "proxy", label: "Proxy", Icon: Network },
-  { value: "tools", label: "Tools", Icon: Wrench },
   { value: "rdp", label: "RDP", Icon: MonitorSmartphone },
+  { value: "tools", label: "Tools", Icon: Wrench },
 ];
 
 const emptyForm = {
