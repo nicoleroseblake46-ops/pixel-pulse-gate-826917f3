@@ -134,7 +134,7 @@ const AdminProducts = () => {
       scheme: isCards ? form.scheme.trim() || null : null,
       level: form.level.trim() || null,
       country_code: form.country_code.trim() || null,
-      extras: (isCards || active === "socks") ? form.extras.trim() || null : null,
+      extras: form.extras.trim() || null,
       image_url: form.image_url.trim() || null,
       vendor_id: form.vendor_id || null,
       full_card: isCards ? form.full_card.trim() || null : null,
