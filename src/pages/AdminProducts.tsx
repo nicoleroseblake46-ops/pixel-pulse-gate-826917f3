@@ -419,7 +419,7 @@ const AdminProducts = () => {
                     </div>
                   )}
 
-                  {active === "socks" && (
+                  {active === "proxy" && (
                     <div className="grid gap-3 rounded-lg border border-border/60 bg-secondary/30 p-3 md:grid-cols-2">
                       <Input placeholder="Name / Label" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                       <Input placeholder="Type (Residential / Datacenter / Mobile / ISP)" value={form.card_type} onChange={(e) => setForm({ ...form, card_type: e.target.value })} />
