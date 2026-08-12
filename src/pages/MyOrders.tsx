@@ -1,3 +1,4 @@
+import { buildCardDelivery } from "@/lib/delivery";
 import { useEffect, useMemo, useState } from "react";
 import { Clock, PackageCheck, PackageX, ShoppingBag, Copy, Undo2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
@@ -84,7 +85,7 @@ const MyOrders = () => {
     if (cardProductIds.length) {
       const { data: prods } = await supabase
         .from("products")
-        .select("id, full_card, seller, city, state, zip, exp, country, bank, bin, brand, card_type, level, extras")
+        .select("id, full_card, seller, city, state, zip, exp, country, bank, bin, brand, card_type, level, extras, host_ip")
         .in("id", cardProductIds);
       productMap = Object.fromEntries((prods ?? []).map((p: any) => [p.id, p]));
     }
