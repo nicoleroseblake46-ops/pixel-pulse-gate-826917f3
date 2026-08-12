@@ -53,21 +53,9 @@ const MyOrders = () => {
   const [refundDialogFor, setRefundDialogFor] = useState<string | null>(null);
   const [reason, setReason] = useState("");
 
-  const composeDeliveryFromProduct = (p: any, existing?: string) => {
-    const parts: string[] = [];
-    if (p.full_card) parts.push(`CARD: ${p.full_card}`);
-    else if (existing) parts.push(`CARD: ${existing}`);
-    if (p.exp && !(p.full_card ?? existing ?? "").includes(p.exp)) parts.push(`EXP: ${p.exp}`);
-    if (p.seller) parts.push(`NAME: ${p.seller}`);
-    const addr = [p.city, p.state, p.zip].filter(Boolean).join(", ");
-    if (addr) parts.push(`ADDRESS: ${addr}`);
-    if (p.country) parts.push(`COUNTRY: ${p.country}`);
-    if (p.bank) parts.push(`BANK: ${p.bank}`);
-    if (p.bin) parts.push(`BIN: ${p.bin}`);
-    if (p.brand || p.card_type || p.level) parts.push(`TYPE: ${[p.brand, p.card_type, p.level].filter(Boolean).join(" · ")}`);
-    if (p.extras) parts.push(String(p.extras));
-    return parts.length ? parts.join(" | ") : existing;
-  };
+  const composeDeliveryFromProduct = (p: any, existing?: string) =>
+    buildCardDelivery(p, existing) ?? existing;
+
 
   const loadOrders = async () => {
     if (!user) return;

@@ -63,16 +63,8 @@ export const Socks = () => {
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const cartIdFor = (id: string) => `socks-${id}`;
-  const composeDelivery = (s: Product) => {
-    const parts: string[] = [];
-    const addr = [(s as any).city, s.state, s.country].filter(Boolean).join(", ");
-    if (addr) parts.push(`LOCATION: ${addr}`);
-    if (s.card_type) parts.push(`TYPE: ${s.card_type}`);
-    if (s.bank) parts.push(`PROVIDER: ${s.bank}`);
-    if (s.level) parts.push(`SPEED: ${s.level}`);
-    if (s.extras) parts.push(s.extras);
-    return parts.length ? parts.join(" | ") : undefined;
-  };
+  const composeDelivery = (s: Product) => buildProxyDelivery(s);
+
   const buildItem = (s: Product) => ({
     id: cartIdFor(s.id),
     name: s.name,
@@ -262,21 +254,8 @@ export const Cards = () => {
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const cartIdFor = (id: string) => `cards-${id}`;
-  const composeDelivery = (c: Product) => {
-    const anyC = c as any;
-    const parts: string[] = [];
-    if (anyC.full_card) parts.push(`CARD: ${anyC.full_card}`);
-    if (c.exp && !anyC.full_card?.includes(c.exp)) parts.push(`EXP: ${c.exp}`);
-    if (c.seller) parts.push(`NAME: ${c.seller}`);
-    const addr = [anyC.city, c.state, c.zip].filter(Boolean).join(", ");
-    if (addr) parts.push(`ADDRESS: ${addr}`);
-    if (c.country) parts.push(`COUNTRY: ${c.country}`);
-    if (c.bank) parts.push(`BANK: ${c.bank}`);
-    if (c.bin) parts.push(`BIN: ${c.bin}`);
-    if (c.brand || c.card_type || c.level) parts.push(`TYPE: ${[c.brand, c.card_type, c.level].filter(Boolean).join(" · ")}`);
-    if (c.extras) parts.push(c.extras);
-    return parts.length ? parts.join(" | ") : undefined;
-  };
+  const composeDelivery = (c: Product) => buildCardDelivery(c);
+
   const buildItem = (c: Product) => ({
     id: cartIdFor(c.id),
     name: `${c.brand ?? c.scheme ?? "CARD"} ${c.bin ?? ""}`.trim(),
