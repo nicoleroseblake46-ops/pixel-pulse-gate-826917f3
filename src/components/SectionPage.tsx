@@ -1,3 +1,4 @@
+import { buildProxyDelivery } from "@/lib/delivery";
 import { AppLayout } from "@/components/AppLayout";
 import { LucideIcon, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,10 +24,11 @@ export const SectionPage = ({ title, Icon, category }: Props) => {
       name: item.name,
       meta: item.meta,
       price: Number(item.price),
-      delivery: item.extras || undefined,
+      delivery: category === "proxy" ? buildProxyDelivery(item) : item.extras || undefined,
     });
     toast.success("Added to cart", { description: item.name });
   };
+
 
   return (
     <AppLayout>
