@@ -1,4 +1,4 @@
-import { buildCardDelivery } from "@/lib/delivery";
+import { buildCardDelivery, buildProxyDelivery } from "@/lib/delivery";
 import { useEffect, useMemo, useState } from "react";
 import { Clock, PackageCheck, PackageX, ShoppingBag, Copy, Undo2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
