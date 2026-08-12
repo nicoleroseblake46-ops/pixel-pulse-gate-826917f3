@@ -77,27 +77,33 @@ const MyOrders = () => {
       })),
     );
 
-    // Enrich card items by fetching product details, so old orders also show full info.
-    const cardProductIds = Array.from(new Set(
-      flat.filter((i) => i.id.startsWith("cards-")).map((i) => i.id.slice("cards-".length))
-    ));
+    // Enrich card/proxy items by fetching product details, so old orders also show full info.
+    const idsFor = (prefix: string) =>
+      Array.from(new Set(flat.filter((i) => i.id.startsWith(prefix)).map((i) => i.id.slice(prefix.length))));
+    const lookupIds = [...idsFor("cards-"), ...idsFor("proxy-")];
     let productMap: Record<string, any> = {};
-    if (cardProductIds.length) {
+    if (lookupIds.length) {
       const { data: prods } = await supabase
         .from("products")
-        .select("id, full_card, seller, city, state, zip, exp, country, bank, bin, brand, card_type, level, extras, host_ip")
-        .in("id", cardProductIds);
+        .select("id, category, full_card, seller, city, state, zip, exp, country, bank, bin, brand, card_type, level, extras, host_ip")
+        .in("id", lookupIds);
       productMap = Object.fromEntries((prods ?? []).map((p: any) => [p.id, p]));
     }
 
     setItems(
       flat.map((item) => {
-        if (!item.id.startsWith("cards-")) return item;
-        const p = productMap[item.id.slice("cards-".length)];
+        const isCard = item.id.startsWith("cards-");
+        const isProxy = item.id.startsWith("proxy-");
+        if (!isCard && !isProxy) return item;
+        const p = productMap[item.id.slice(isCard ? 6 : 6)];
         if (!p) return item;
-        return { ...item, delivery: composeDeliveryFromProduct(p, item.delivery) };
+        return {
+          ...item,
+          delivery: isCard ? composeDeliveryFromProduct(p, item.delivery) : buildProxyDelivery(p),
+        };
       })
     );
+
     setLoading(false);
   };
 
