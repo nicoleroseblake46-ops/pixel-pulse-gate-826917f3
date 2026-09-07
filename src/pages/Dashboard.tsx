@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CreditCard, MonitorSmartphone, Zap, ScrollText, History, Database, Server, Network, Shield, Plus, Globe, Wrench, Sparkles, X } from "lucide-react";
+import { CreditCard, MonitorSmartphone, Zap, ScrollText, History, Database, Server, Network, Shield, Plus, Globe, Wrench, Sparkles, X, Radio, ArrowUpRight } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -44,12 +44,14 @@ type Panel = { accent?: string; title?: string; body: string };
 type BaseItem = { id: string; name: string; created_at: string; category: string };
 
 const bucketLabel = (iso: string) => {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
-  if (diff < 3600 * 24) return `${Math.floor(diff / 3600)} hours ago`;
-  const d = Math.floor(diff / 86400);
-  return d === 1 ? "1 day ago" : `${d} days ago`;
+  const date = new Date(iso);
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const days = Math.round((startOfToday - startOfDate) / 86400000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
 const Dashboard = () => {
@@ -267,8 +269,25 @@ const Dashboard = () => {
 
         {/* New Base Updates */}
         <section className="order-2 lg:order-1">
-          <h2 className="mb-4 font-display text-xl font-bold tracking-tight md:text-2xl">New Base Updates</h2>
-          <div className="space-y-4">
+          <div className="mb-4 flex items-end justify-between gap-3 border-b border-border pb-3">
+            <div>
+              <div className="mb-1 flex items-center gap-2 font-mono text-[10px] font-bold uppercase text-primary">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-50" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+                Updating live
+              </div>
+              <h2 className="font-display text-xl font-bold md:text-2xl">New Base Updates</h2>
+            </div>
+            {!!grouped.length && (
+              <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-muted-foreground">
+                <Radio className="h-3.5 w-3.5 text-primary" />
+                {grouped.reduce((total, group) => total + group.items.length, 0)} active drops
+              </div>
+            )}
+          </div>
+          <div className="relative space-y-5 before:absolute before:bottom-3 before:left-3 before:top-3 before:w-px before:bg-border">
             {loading && !bases.length && (
               <div className="space-y-2">
                 {[0,1,2,3].map(i => <div key={i} className="h-12 animate-pulse rounded-lg border border-border bg-card/60" />)}
@@ -276,8 +295,12 @@ const Dashboard = () => {
             )}
 
             {grouped.map((g, gi) => (
-              <div key={`${g.label}-${gi}`}>
-                <div className="mb-2 font-mono text-xs text-muted-foreground">{g.label}</div>
+              <div key={`${g.label}-${gi}`} className="relative pl-7 animate-fade-up">
+                <span className="absolute left-[9px] top-1.5 h-1.5 w-1.5 rounded-full bg-primary ring-4 ring-background" />
+                <div className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase text-muted-foreground">
+                  {g.label}
+                  {gi === 0 && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">Latest</span>}
+                </div>
                 <div className="space-y-2">
                   {g.items.map((b) => {
                     const isSale = b.category === "sales";
@@ -286,7 +309,7 @@ const Dashboard = () => {
                       <Link
                         key={b.id}
                         to={to}
-                        className="group flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5 shadow-sm transition-smooth hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-[var(--shadow-elevated)]"
+                        className="group flex min-h-14 items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-sm transition-smooth hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-[var(--shadow-elevated)]"
                       >
                         <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${isSale ? "bg-accent/15 text-accent group-hover:bg-accent group-hover:text-accent-foreground" : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"}`}>
                           <Plus className="h-3.5 w-3.5" />
@@ -295,6 +318,7 @@ const Dashboard = () => {
                         {isSale && (
                           <span className="ml-auto shrink-0 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-accent">Sale</span>
                         )}
+                        <ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
                       </Link>
                     );
                   })}
