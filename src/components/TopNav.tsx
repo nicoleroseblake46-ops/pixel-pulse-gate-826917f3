@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home, CreditCard, MonitorSmartphone, Network, Wrench, Zap, ScrollText,
-  ShoppingBag, MessageSquareText, Bell, Mail, ShoppingCart, Wallet,
+  ShoppingBag, MessageSquareText, Bell, Mail, ShoppingCart, Wallet, Database,
   User, Menu, X, ChevronDown, LogOut, ShieldCheck, FilePenLine, Package, Globe,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ import { ThemeToggle } from "./ThemeToggle";
 const mainNav = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Cards", url: "/cards", icon: CreditCard, hasDropdown: true },
+  { title: "Bases", url: "/bases", icon: Database },
   { title: "RDP", url: "/rdp", icon: MonitorSmartphone },
   { title: "Proxy", url: "/proxy", icon: Network },
   { title: "Tools", url: "/tools", icon: Wrench, hasDropdown: true },

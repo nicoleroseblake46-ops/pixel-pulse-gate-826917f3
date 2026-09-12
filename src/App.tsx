@@ -22,6 +22,7 @@ import { Sales, Cards, Proxy, RDP } from "./pages/Sections";
 import Tools from "./pages/Tools";
 import MyOrders from "./pages/MyOrders";
 import Tickets from "./pages/Tickets";
+import Bases from "./pages/Bases";
 import NotFound from "./pages/NotFound.tsx";
 import AdminVisitors from "./pages/AdminVisitors";
 import { useVisitorTracking } from "./hooks/use-visitor-tracking";
