@@ -1083,7 +1083,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
 
       return {
         category: "cards" as const,
-        name: base.trim() || `Base ${new Date().toISOString().slice(0, 10)}`,
+        name: base.trim(),
         meta: "",
         price: priceN,
         bin: r.bin,
@@ -1105,7 +1105,19 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         extras: `EMAIL: ${mock.email} | PHONE: ${mock.phone}`,
       } as any;
     });
+
+    // Auto base name in the form 0908-US-CA-GB-84%valid when none was typed
+    if (!base.trim()) {
+      const d = new Date();
+      const stamp = `${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+      const codes = Array.from(new Set(payload.map((p: any) => p.country_code).filter(Boolean))).slice(0, 5);
+      const validPct = 78 + Math.floor(Math.random() * 18);
+      const autoName = [stamp, ...codes, `${validPct}%valid`].join("-");
+      payload.forEach((p: any) => { p.name = autoName; });
+    }
+
     const { data: inserted, error } = await supabase.from("products").insert(payload).select("id,category,name,meta,price,bin,is_active");
+
     setBusy(false);
     if (error) { toast.error("Bulk import failed", { description: error.message }); return; }
     toast.success(`Imported ${payload.length} cards — brand, country & flag auto-detected`);
@@ -1128,7 +1140,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         <span className="rounded-full bg-primary/20 px-2 py-0.5 font-mono text-[10px] text-primary">{preview.length} parsed</span>
       </div>
       <div className="grid gap-2 md:grid-cols-[1fr_140px]">
-        <Input placeholder="Base name (applied to all rows)" value={base} onChange={(e) => setBase(e.target.value)} />
+        <Input placeholder="Base name (leave empty for auto e.g. 0908-US-CA-GB-84%valid)" value={base} onChange={(e) => setBase(e.target.value)} />
         <Input placeholder="Price USD" type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
       </div>
       <Textarea
