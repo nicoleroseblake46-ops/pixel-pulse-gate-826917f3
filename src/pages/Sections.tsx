@@ -1,6 +1,6 @@
 import { buildCardDelivery, buildProxyDelivery } from "@/lib/delivery";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Tag, CreditCard, Zap, Network, Search, ShoppingCart, MonitorSmartphone, ScrollText, ChevronLeft, ChevronRight } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { SectionPage } from "@/components/SectionPage";
@@ -410,7 +410,14 @@ export const Cards = () => {
                       <Td className="max-w-[140px] truncate" title={c.level ?? ""}>{c.level ?? "—"}</Td>
                       <Td className="font-mono">{c.exp ?? "—"}</Td>
                       <Td className="font-mono">{c.zip ?? "—"}</Td>
-                      <Td className="max-w-[180px] truncate text-amber-600" title={c.name}>{c.name}</Td>
+<Td className="max-w-[180px] truncate" title={c.name}>
+                        <Link
+                          to={`/cards?base=${encodeURIComponent(c.name ?? "")}`}
+                          className="text-amber-600 underline-offset-2 hover:underline dark:text-amber-400"
+                        >
+                          {c.name}
+                        </Link>
+                      </Td>
                       <Td className="font-mono font-semibold">${Number(c.price).toFixed(2)}</Td>
                       <Td>
                         <Button
