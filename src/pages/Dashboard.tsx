@@ -264,17 +264,12 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground">Recently added card inventory</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {!!grouped.length && (
-              <div className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase text-warning">
-                <Radio className="h-3.5 w-3.5" />
-                {grouped.length} live {grouped.length === 1 ? "base" : "bases"}
-              </div>
-            )}
-            <Button asChild size="sm" variant="outline" className="border-warning/40 text-warning hover:bg-warning/10">
-              <Link to="/bases">View all bases</Link>
-            </Button>
-          </div>
+          {!!grouped.length && (
+            <div className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase text-warning">
+              <Radio className="h-3.5 w-3.5" />
+              {grouped.length} live {grouped.length === 1 ? "base" : "bases"}
+            </div>
+          )}
         </div>
 
         {loading && !bases.length && (
