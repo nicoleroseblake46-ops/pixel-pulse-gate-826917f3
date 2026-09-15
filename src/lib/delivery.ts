@@ -34,6 +34,9 @@ export const buildCardDelivery = (p: AnyProduct, existingCard?: string) => {
   push(parts, "BANK", clean(p.bank));
   push(parts, "BIN", clean(p.bin));
   push(parts, "TYPE", [p.brand, p.card_type, p.level].map(clean).filter(Boolean).join(" · "));
+  push(parts, "BASE", clean(p.name));
+  const validMatch = String(p.name ?? "").match(/(\d{2,3})\s*%\s*valid/i);
+  push(parts, "VALIDITY", validMatch ? `${validMatch[1]}%` : clean(p.valid));
 
   return parts.length ? parts.join(" | ") : undefined;
 };

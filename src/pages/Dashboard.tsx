@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CreditCard, MonitorSmartphone, Zap, ScrollText, History, Database, Server, Network, Shield, Plus, Globe, Wrench, Sparkles, X, Radio, ArrowUpRight } from "lucide-react";
+import { CreditCard, MonitorSmartphone, Zap, ScrollText, History, Database, Server, Network, Shield, Globe, Wrench, Sparkles, X, Radio, ArrowUpRight, RefreshCw, Layers3 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { CountryFlag } from "@/components/CountryFlag";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppSettings } from "@/hooks/use-app-settings";
+import { findCountry } from "@/lib/countries";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   CreditCard, MonitorSmartphone, Zap, ScrollText, History, Database, Server, Network, Shield, Globe, Wrench,
@@ -41,7 +43,7 @@ const DEFAULT_IMPORTANT = [
 type Stat = { label: string; value: string; icon: string };
 type Panel = { accent?: string; title?: string; body: string };
 
-type BaseItem = { id: string; name: string; created_at: string; category: string };
+type BaseItem = { id: string; name: string; created_at: string; category: string; country_code: string | null };
 
 const bucketLabel = (iso: string) => {
   const date = new Date(iso);
@@ -68,7 +70,7 @@ const Dashboard = () => {
     const cats = (salesHidden ? ["cards"] : ["cards", "sales"]) as ("cards" | "sales")[];
     const { data } = await supabase
       .from("products")
-      .select("id,name,created_at,category")
+      .select("id,name,created_at,category,country_code")
       .in("category", cats)
       .eq("is_active", true)
       .order("created_at", { ascending: false })
@@ -119,24 +121,27 @@ const Dashboard = () => {
     };
 
     // Dedupe by base name — newest occurrence wins (bases already sorted desc by created_at)
-    const seen = new Set<string>();
-    const uniq: BaseItem[] = [];
+    const indexed = new Map<string, { name: string; category: string; created_at: string; count: number; countries: string[] }>();
     for (const b of bases) {
       if (!isRealBase(b.name)) continue;
       const key = `${b.category}:${(b.name ?? "").trim().toLowerCase()}`;
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      uniq.push(b);
+      if (!key) continue;
+      const existing = indexed.get(key);
+      const country = findCountry(b.country_code)?.code;
+      if (existing) {
+        existing.count += 1;
+        if (country && !existing.countries.includes(country)) existing.countries.push(country);
+      } else {
+        indexed.set(key, {
+          name: b.name.trim(),
+          category: b.category,
+          created_at: b.created_at,
+          count: 1,
+          countries: country ? [country] : [],
+        });
+      }
     }
-
-    const out: { label: string; items: BaseItem[] }[] = [];
-    for (const b of uniq) {
-      const lbl = bucketLabel(b.created_at);
-      const last = out[out.length - 1];
-      if (last && last.label === lbl) last.items.push(b);
-      else out.push({ label: lbl, items: [b] });
-    }
-    return out;
+    return Array.from(indexed.values());
   }, [bases]);
 
 
@@ -241,9 +246,116 @@ const Dashboard = () => {
         })}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Important (first on mobile so it isn't pushed below bases) */}
-        <section className="order-1 lg:order-2">
+      {/* New Base Updates */}
+      <section className="mb-8">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-warning/20 pb-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning text-background shadow-[0_0_22px_hsl(var(--warning)/0.2)]">
+              <RefreshCw className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-display text-xl font-extrabold md:text-2xl">Base Updates</h2>
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-warning" />
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Recently added card inventory</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {!!grouped.length && (
+              <div className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase text-warning">
+                <Radio className="h-3.5 w-3.5" />
+                {grouped.length} live {grouped.length === 1 ? "base" : "bases"}
+              </div>
+            )}
+            <Button asChild size="sm" variant="outline" className="border-warning/40 text-warning hover:bg-warning/10">
+              <Link to="/bases">View all bases</Link>
+            </Button>
+          </div>
+        </div>
+
+        {loading && !bases.length && (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="h-64 animate-pulse rounded-lg border border-border bg-card" />)}
+          </div>
+        )}
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {grouped.map((base, index) => {
+            const isSale = base.category === "sales";
+            const to = isSale ? `/sales?base=${encodeURIComponent(base.name)}` : `/cards?base=${encodeURIComponent(base.name)}`;
+            const largestBase = Math.max(...grouped.map((item) => item.count), 1);
+            const stockPercent = Math.max(18, Math.round((base.count / largestBase) * 100));
+            return (
+              <Link
+                key={`${base.category}:${base.name}`}
+                to={to}
+                className="group relative flex min-h-64 flex-col overflow-hidden rounded-lg border border-warning/20 bg-card p-5 shadow-sm transition-smooth hover:-translate-y-0.5 hover:border-warning/60 hover:shadow-[0_14px_36px_-20px_hsl(var(--warning)/0.35)]"
+              >
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-warning/70 to-transparent opacity-40 transition-opacity group-hover:opacity-100" />
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="break-words font-display text-base font-extrabold leading-snug text-foreground transition-colors group-hover:text-warning">
+                    {base.name}
+                  </h3>
+                  {index === 0 && <span className="shrink-0 rounded border border-warning/30 bg-warning/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase text-warning">Latest</span>}
+                </div>
+
+                <div className="mt-4 min-h-10">
+                  <div className="mb-2 text-[11px] font-semibold text-muted-foreground">Countries</div>
+                  {base.countries.length ? (
+                    <div className="flex flex-wrap gap-x-3 gap-y-2">
+                      {base.countries.slice(0, 12).map((code) => (
+                        <span key={code} className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-foreground">
+                          <CountryFlag value={code} width={18} /> {code}
+                        </span>
+                      ))}
+                      {base.countries.length > 12 && <span className="font-mono text-[11px] text-warning">+{base.countries.length - 12}</span>}
+                    </div>
+                  ) : <span className="text-xs text-muted-foreground">Mixed inventory</span>}
+                </div>
+
+                <div className="mt-5 grid grid-cols-[4rem_1fr_2.5rem] items-center gap-3">
+                  <span className="text-xs font-semibold text-muted-foreground">Stock</span>
+                  <span className="h-2 overflow-hidden rounded-full bg-muted">
+                    <span className="block h-full rounded-full bg-warning transition-all duration-700" style={{ width: `${stockPercent}%` }} />
+                  </span>
+                  <span className="text-right font-mono text-[11px] font-bold text-warning">{stockPercent}%</span>
+                </div>
+
+                <div className="mt-auto border-t border-border pt-4">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Updated</span>
+                    <span className="font-semibold text-foreground">{bucketLabel(base.created_at)}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-muted-foreground"><Layers3 className="h-3.5 w-3.5" /> Available</span>
+                    <span className="flex items-center gap-2 font-mono font-bold text-foreground">
+                      {base.count.toLocaleString()}
+                      <ArrowUpRight className="h-4 w-4 text-warning transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {!loading && !grouped.length && (
+          <div className="rounded-lg border border-dashed border-warning/30 bg-card px-5 py-10 text-center text-muted-foreground">No bases published yet.</div>
+        )}
+
+        {bases.length >= limit && (
+          <div className="flex justify-center pt-5">
+            <Button variant="secondary" onClick={() => setLimit((n) => n + 30)}>Load more bases</Button>
+          </div>
+        )}
+      </section>
+
+      <div className="grid gap-6">
+        <section>
           <h2 className="mb-4 font-display text-xl font-bold tracking-tight md:text-2xl">Important</h2>
           <div className="space-y-3">
             {important.map((p, i) => {
@@ -267,78 +379,6 @@ const Dashboard = () => {
           </div>
         </section>
 
-        {/* New Base Updates */}
-        <section className="order-2 lg:order-1">
-          <div className="mb-4 flex items-end justify-between gap-3 border-b border-border pb-3">
-            <div>
-              <div className="mb-1 flex items-center gap-2 font-mono text-[10px] font-bold uppercase text-primary">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-50" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                </span>
-                Updating live
-              </div>
-              <h2 className="font-display text-xl font-bold md:text-2xl">New Base Updates</h2>
-            </div>
-            {!!grouped.length && (
-              <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-muted-foreground">
-                <Radio className="h-3.5 w-3.5 text-primary" />
-                {grouped.reduce((total, group) => total + group.items.length, 0)} active drops
-              </div>
-            )}
-          </div>
-          <div className="relative space-y-5 before:absolute before:bottom-3 before:left-3 before:top-3 before:w-px before:bg-border">
-            {loading && !bases.length && (
-              <div className="space-y-2">
-                {[0,1,2,3].map(i => <div key={i} className="h-12 animate-pulse rounded-lg border border-border bg-card/60" />)}
-              </div>
-            )}
-
-            {grouped.map((g, gi) => (
-              <div key={`${g.label}-${gi}`} className="relative pl-7 animate-fade-up">
-                <span className="absolute left-[9px] top-1.5 h-1.5 w-1.5 rounded-full bg-primary ring-4 ring-background" />
-                <div className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase text-muted-foreground">
-                  {g.label}
-                  {gi === 0 && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">Latest</span>}
-                </div>
-                <div className="space-y-2">
-                  {g.items.map((b) => {
-                    const isSale = b.category === "sales";
-                    const to = isSale ? `/sales?base=${encodeURIComponent(b.name)}` : `/cards?base=${encodeURIComponent(b.name)}`;
-                    return (
-                      <Link
-                        key={b.id}
-                        to={to}
-                        className="group flex min-h-14 items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-sm transition-smooth hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-[var(--shadow-elevated)]"
-                      >
-                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${isSale ? "bg-accent/15 text-accent group-hover:bg-accent group-hover:text-accent-foreground" : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"}`}>
-                          <Plus className="h-3.5 w-3.5" />
-                        </span>
-                        <span className="truncate font-mono text-xs uppercase tracking-wider text-foreground">{b.name}</span>
-                        {isSale && (
-                          <span className="ml-auto shrink-0 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-accent">Sale</span>
-                        )}
-                        <ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-
-            {!loading && !bases.length && (
-              <div className="rounded-xl border border-dashed border-border bg-card px-5 py-10 text-center text-muted-foreground">
-                No bases published yet.
-              </div>
-            )}
-
-            {bases.length >= limit && (
-              <div className="flex justify-center pt-2">
-                <Button variant="secondary" onClick={() => setLimit((n) => n + 30)}>Load more</Button>
-              </div>
-            )}
-          </div>
-        </section>
       </div>
     </AppLayout>
   );
