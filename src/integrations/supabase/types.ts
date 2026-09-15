@@ -407,6 +407,7 @@ export type Database = {
         Args: { _cart_total: number; _items: Json }
         Returns: string
       }
+      refresh_card_bases: { Args: never; Returns: number }
       refund_checker_fee: {
         Args: { _count: number; _price_per_check: number }
         Returns: number
