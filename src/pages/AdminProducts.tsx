@@ -50,6 +50,7 @@ const emptyForm = {
   vendor_id: "",
   full_card: "",
   host_ip: "",
+  manual_delivery: "",
 };
 
 type VendorOpt = { id: string; handle: string; name: string };
@@ -139,6 +140,7 @@ const AdminProducts = () => {
       vendor_id: form.vendor_id || null,
       full_card: isCards ? form.full_card.trim() || null : null,
       host_ip: active === "rdp" ? form.host_ip.trim() || null : null,
+      manual_delivery: form.manual_delivery.trim() || null,
     } as any;
     const { data: saved, error } = editingId
       ? await supabase.from("products").update(payload).eq("id", editingId).select("id,category,name,meta,price,bin,is_active").maybeSingle()
@@ -180,6 +182,7 @@ const AdminProducts = () => {
       vendor_id: (p as any).vendor_id ?? "",
       full_card: (p as any).full_card ?? "",
       host_ip: (p as any).host_ip ?? "",
+      manual_delivery: (p as any).manual_delivery ?? "",
     });
   };
 
