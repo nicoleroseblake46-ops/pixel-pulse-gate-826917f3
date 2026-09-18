@@ -65,6 +65,7 @@ const AdminOrders = () => {
       const items = getCartItems(o.metadata);
       return items.map((it: any, idx: number) => ({
         key: `${o.id}-${idx}`,
+        index: idx,
         orderId: o.id,
         userId: o.user_id,
         username: profiles[o.user_id]?.username ?? "Unknown",
