@@ -194,6 +194,10 @@ const AdminOrders = () => {
                       <TableCell>
                         <div className="font-medium">{r.username}</div>
                         <div className="font-mono text-[10px] text-muted-foreground">{r.userId.slice(0, 8)}</div>
+                        <Button size="sm" variant="ghost" className="mt-1 h-6 px-2 text-[11px]"
+                          onClick={() => { setTopUp({ id: r.userId, username: r.username }); setTopUpAmount(""); }}>
+                          Add money
+                        </Button>
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">{r.name}</div>
@@ -201,11 +205,27 @@ const AdminOrders = () => {
                       </TableCell>
                       <TableCell className="font-mono font-semibold text-primary">${r.price.toFixed(2)}</TableCell>
                       <TableCell>
-                        {r.delivery ? (
-                          <code className="block max-w-[400px] whitespace-pre-wrap break-words rounded border border-border bg-secondary/40 px-2 py-1 font-mono text-[11px]">
-                            {r.delivery}
-                          </code>
-                        ) : <span className="text-xs text-muted-foreground">—</span>}
+                        {editKey === r.key ? (
+                          <div className="space-y-2">
+                            <Textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} className="min-h-[90px] font-mono text-[11px]" />
+                            <div className="flex gap-2">
+                              <Button size="sm" disabled={busy} onClick={() => saveDelivery(r.orderId, r.index)}>Save</Button>
+                              <Button size="sm" variant="ghost" onClick={() => setEditKey(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            {r.delivery ? (
+                              <code className="block max-w-[400px] whitespace-pre-wrap break-words rounded border border-border bg-secondary/40 px-2 py-1 font-mono text-[11px]">
+                                {r.delivery}
+                              </code>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+                              onClick={() => { setEditKey(r.key); setEditValue(r.delivery); }}>
+                              Edit delivery
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="font-mono text-[10px]">#{r.orderId.slice(0, 8)}</Badge>
