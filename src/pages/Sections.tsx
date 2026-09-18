@@ -257,6 +257,16 @@ export const Cards = () => {
   const cartIdFor = (id: string) => `cards-${id}`;
   const composeDelivery = (c: Product) => buildCardDelivery(c);
 
+  // Surnames stay hidden until the card is purchased.
+  const maskLastName = (name?: string | null) => {
+    const raw = (name ?? "").trim();
+    if (!raw) return "—";
+    const parts = raw.split(/\s+/);
+    if (parts.length < 2) return parts[0];
+    const [first, ...rest] = parts;
+    return `${first} ${rest.map((p) => `${p[0]?.toUpperCase() ?? ""}****`).join(" ")}`;
+  };
+
   const buildItem = (c: Product) => ({
     id: cartIdFor(c.id),
     name: `${c.brand ?? c.scheme ?? "CARD"} ${c.bin ?? ""}`.trim(),
@@ -384,7 +394,7 @@ export const Cards = () => {
                   const inCart = cartItems.some((i) => i.id === cartIdFor(c.id));
                   const scheme = (c.scheme ?? c.brand ?? "").toUpperCase();
                   const type = (c.card_type ?? "").toUpperCase();
-                  const fullName = c.seller ?? "—";
+                  const fullName = maskLastName(c.seller);
                   const city = (c as any).city ?? "—";
                   return (
                     <tr key={c.id} className="border-t border-border hover:bg-secondary/30">

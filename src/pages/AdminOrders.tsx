@@ -6,6 +6,7 @@ import { Loader } from "@/components/Loader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
@@ -32,6 +33,11 @@ const getCartItems = (metadata: any): any[] => {
 };
 
 const AdminOrders = () => {
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [topUp, setTopUp] = useState<{ id: string; username: string } | null>(null);
+  const [topUpAmount, setTopUpAmount] = useState("");
   const { isAdmin, loading: adminLoading } = useAdmin();
   const [orders, setOrders] = useState<Order[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -65,6 +71,7 @@ const AdminOrders = () => {
       const items = getCartItems(o.metadata);
       return items.map((it: any, idx: number) => ({
         key: `${o.id}-${idx}`,
+        index: idx,
         orderId: o.id,
         userId: o.user_id,
         username: profiles[o.user_id]?.username ?? "Unknown",
@@ -89,6 +96,32 @@ const AdminOrders = () => {
     [orders]
   );
 
+  const saveDelivery = async (orderId: string, index: number) => {
+    setBusy(true);
+    const { error } = await client.rpc("admin_set_order_delivery", {
+      _payment_id: orderId, _item_index: index, _delivery: editValue,
+    });
+    if (error) toast.error("Could not save", { description: error.message });
+    else { toast.success("Delivery updated"); setEditKey(null); await load(); }
+    setBusy(false);
+  };
+
+  const addMoney = async () => {
+    if (!topUp) return;
+    const amount = Number(topUpAmount);
+    if (!Number.isFinite(amount) || amount === 0) return toast.error("Enter a non-zero amount");
+    setBusy(true);
+    const { data, error } = await client.rpc("admin_adjust_balance", {
+      _user_id: topUp.id, _amount: amount, _note: "Admin top-up from purchases",
+    });
+    if (error) toast.error("Failed", { description: error.message });
+    else {
+      toast.success("Balance updated", { description: `New balance: $${Number(data).toFixed(2)}` });
+      setTopUp(null); setTopUpAmount("");
+    }
+    setBusy(false);
+  };
+
   if (adminLoading) return <Loader />;
   if (!isAdmin) return <Navigate to="/" replace />;
 
@@ -111,6 +144,22 @@ const AdminOrders = () => {
           <Stat label="Items sold" value={flat.length} />
           <Stat label="Revenue" value={`$${totalRevenue.toFixed(2)}`} />
         </div>
+
+        {topUp && (
+          <section className="rounded-xl border border-primary/40 bg-card p-4">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Add money</div>
+            <div className="mt-1 font-display text-xl font-black">{topUp.username}</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Input
+                type="number" step="0.01" placeholder="Amount $" value={topUpAmount}
+                onChange={(e) => setTopUpAmount(e.target.value)} className="max-w-[160px] font-mono"
+              />
+              <Button disabled={busy} onClick={addMoney}>{busy ? "Adding..." : "Add to balance"}</Button>
+              <Button variant="ghost" onClick={() => { setTopUp(null); setTopUpAmount(""); }}>Cancel</Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Use a negative amount to deduct. Credited instantly.</p>
+          </section>
+        )}
 
         <section className="rounded-xl border border-border bg-card p-4 md:p-5">
           <div className="mb-4 flex items-center gap-2">
@@ -146,6 +195,10 @@ const AdminOrders = () => {
                       <TableCell>
                         <div className="font-medium">{r.username}</div>
                         <div className="font-mono text-[10px] text-muted-foreground">{r.userId.slice(0, 8)}</div>
+                        <Button size="sm" variant="ghost" className="mt-1 h-6 px-2 text-[11px]"
+                          onClick={() => { setTopUp({ id: r.userId, username: r.username }); setTopUpAmount(""); }}>
+                          Add money
+                        </Button>
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">{r.name}</div>
@@ -153,11 +206,27 @@ const AdminOrders = () => {
                       </TableCell>
                       <TableCell className="font-mono font-semibold text-primary">${r.price.toFixed(2)}</TableCell>
                       <TableCell>
-                        {r.delivery ? (
-                          <code className="block max-w-[400px] whitespace-pre-wrap break-words rounded border border-border bg-secondary/40 px-2 py-1 font-mono text-[11px]">
-                            {r.delivery}
-                          </code>
-                        ) : <span className="text-xs text-muted-foreground">—</span>}
+                        {editKey === r.key ? (
+                          <div className="space-y-2">
+                            <Textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} className="min-h-[90px] font-mono text-[11px]" />
+                            <div className="flex gap-2">
+                              <Button size="sm" disabled={busy} onClick={() => saveDelivery(r.orderId, r.index)}>Save</Button>
+                              <Button size="sm" variant="ghost" onClick={() => setEditKey(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            {r.delivery ? (
+                              <code className="block max-w-[400px] whitespace-pre-wrap break-words rounded border border-border bg-secondary/40 px-2 py-1 font-mono text-[11px]">
+                                {r.delivery}
+                              </code>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+                              onClick={() => { setEditKey(r.key); setEditValue(r.delivery); }}>
+                              Edit delivery
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="font-mono text-[10px]">#{r.orderId.slice(0, 8)}</Badge>
