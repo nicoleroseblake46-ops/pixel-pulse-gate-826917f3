@@ -108,6 +108,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           level: string | null
+          manual_delivery: string | null
           meta: string
           name: string
           price: number
@@ -139,6 +140,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           level?: string | null
+          manual_delivery?: string | null
           meta?: string
           name: string
           price?: number
@@ -170,6 +172,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           level?: string | null
+          manual_delivery?: string | null
           meta?: string
           name?: string
           price?: number
@@ -387,6 +390,10 @@ export type Database = {
       admin_adjust_balance: {
         Args: { _amount: number; _note?: string; _user_id: string }
         Returns: number
+      }
+      admin_set_order_delivery: {
+        Args: { _delivery: string; _item_index: number; _payment_id: string }
+        Returns: Json
       }
       approve_payment: { Args: { _payment_id: string }; Returns: undefined }
       assign_admin_role_by_email: { Args: { _email: string }; Returns: Json }

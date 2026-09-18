@@ -8,6 +8,13 @@
       "when": 1789444674414,
       "tag": "0000_auto_refresh_card_bases",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789698190415,
+      "tag": "0001_manual_delivery_and_order_delivery_edit",
+      "breakpoints": true
     }
   ]
 }
