@@ -95,6 +95,32 @@ const AdminOrders = () => {
     [orders]
   );
 
+  const saveDelivery = async (orderId: string, index: number) => {
+    setBusy(true);
+    const { error } = await client.rpc("admin_set_order_delivery", {
+      _payment_id: orderId, _item_index: index, _delivery: editValue,
+    });
+    if (error) toast.error("Could not save", { description: error.message });
+    else { toast.success("Delivery updated"); setEditKey(null); await load(); }
+    setBusy(false);
+  };
+
+  const addMoney = async () => {
+    if (!topUp) return;
+    const amount = Number(topUpAmount);
+    if (!Number.isFinite(amount) || amount === 0) return toast.error("Enter a non-zero amount");
+    setBusy(true);
+    const { data, error } = await client.rpc("admin_adjust_balance", {
+      _user_id: topUp.id, _amount: amount, _note: "Admin top-up from purchases",
+    });
+    if (error) toast.error("Failed", { description: error.message });
+    else {
+      toast.success("Balance updated", { description: `New balance: $${Number(data).toFixed(2)}` });
+      setTopUp(null); setTopUpAmount("");
+    }
+    setBusy(false);
+  };
+
   if (adminLoading) return <Loader />;
   if (!isAdmin) return <Navigate to="/" replace />;
 
