@@ -16,8 +16,16 @@ const pick = (extras: string | null | undefined, key: "EMAIL" | "PHONE") => {
   return m ? m[1].trim() : "";
 };
 
+/** Admin-entered delivery always wins over auto-generated payloads. */
+const manual = (p: AnyProduct) => {
+  const v = typeof p?.manual_delivery === "string" ? p.manual_delivery.trim() : "";
+  return v || undefined;
+};
+
 /** Full card payload: PAN|EXP|CVV plus complete cardholder identity. */
 export const buildCardDelivery = (p: AnyProduct, existingCard?: string) => {
+  const override = manual(p);
+  if (override) return override;
   const parts: string[] = [];
   const fullCard = clean(p.full_card) || clean(existingCard);
   const [pan, cardExp, cvv] = (fullCard || "").split("|").map((s) => s?.trim());
@@ -49,6 +57,8 @@ const hash = (s: string) => {
 
 /** Proxy payload — falls back to a deterministic mock endpoint when none is set. */
 export const buildProxyDelivery = (p: AnyProduct) => {
+  const override = manual(p);
+  if (override) return override;
   if (p.extras && /PROXY\s*:/i.test(p.extras)) return String(p.extras).trim();
 
   const h = hash(String(p.id ?? p.name ?? "proxy"));
