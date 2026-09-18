@@ -451,6 +451,16 @@ const AdminProducts = () => {
 
 
 
+                  <div className="rounded-lg border border-primary/30 bg-secondary/20 p-3">
+                    <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-primary">Manual delivery (overrides auto)</div>
+                    <Textarea
+                      placeholder="Type exactly what the buyer should receive. Leave empty to use the automatic delivery."
+                      value={form.manual_delivery}
+                      onChange={(e) => setForm({ ...form, manual_delivery: e.target.value })}
+                      className="font-mono"
+                    />
+                  </div>
+
                   <Button type="submit" disabled={saving}>
                     <Plus className="h-4 w-4" /> {saving ? "Saving..." : editingId ? "Save changes" : "Publish item"}
                   </Button>
