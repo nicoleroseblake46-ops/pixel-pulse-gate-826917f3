@@ -32,6 +32,11 @@ const getCartItems = (metadata: any): any[] => {
 };
 
 const AdminOrders = () => {
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [topUp, setTopUp] = useState<{ id: string; username: string } | null>(null);
+  const [topUpAmount, setTopUpAmount] = useState("");
   const { isAdmin, loading: adminLoading } = useAdmin();
   const [orders, setOrders] = useState<Order[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -112,6 +117,22 @@ const AdminOrders = () => {
           <Stat label="Items sold" value={flat.length} />
           <Stat label="Revenue" value={`$${totalRevenue.toFixed(2)}`} />
         </div>
+
+        {topUp && (
+          <section className="rounded-xl border border-primary/40 bg-card p-4">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Add money</div>
+            <div className="mt-1 font-display text-xl font-black">{topUp.username}</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Input
+                type="number" step="0.01" placeholder="Amount $" value={topUpAmount}
+                onChange={(e) => setTopUpAmount(e.target.value)} className="max-w-[160px] font-mono"
+              />
+              <Button disabled={busy} onClick={addMoney}>{busy ? "Adding..." : "Add to balance"}</Button>
+              <Button variant="ghost" onClick={() => { setTopUp(null); setTopUpAmount(""); }}>Cancel</Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Use a negative amount to deduct. Credited instantly.</p>
+          </section>
+        )}
 
         <section className="rounded-xl border border-border bg-card p-4 md:p-5">
           <div className="mb-4 flex items-center gap-2">
