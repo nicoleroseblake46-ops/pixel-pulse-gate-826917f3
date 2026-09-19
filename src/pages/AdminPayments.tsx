@@ -232,7 +232,7 @@ const AdminPayments = () => {
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Manual Top-Up</div>
               <h2 className="mt-1 font-display text-2xl font-black tracking-tight">Add balance to a user</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Credit or debit a user's balance instantly — no submit needed from their side. Use a negative amount to deduct.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Credit or debit a user instantly — no submit needed from their side. Usernames are unique, so an exact name always hits the right person; a user ID also works. Use a negative amount to deduct.</p>
             </div>
             <form onSubmit={adjustBalance} className="grid w-full gap-2 sm:grid-cols-[1fr_120px_auto] lg:max-w-2xl">
               <Input value={adjustUser} onChange={(e) => setAdjustUser(e.target.value)} placeholder="Username or user ID" className="bg-secondary/50" disabled={adjusting} required />

@@ -28,7 +28,10 @@ const Profile = () => {
     setSaving(true);
     const { error } = await supabase.from("profiles").update({ username }).eq("id", user.id);
     setSaving(false);
-    if (error) toast.error(error.message); else toast.success("Profile updated");
+    if (error) {
+      const taken = error.message.toLowerCase().includes("profiles_username_unique") || error.code === "23505";
+      toast.error(taken ? "That username is taken" : error.message, taken ? { description: "Pick another one — usernames must be unique." } : undefined);
+    } else toast.success("Profile updated");
   };
 
   const initial = (username || user?.email || "?").charAt(0).toUpperCase();
