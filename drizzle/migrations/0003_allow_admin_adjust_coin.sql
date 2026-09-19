@@ -1,0 +1,2 @@
+ALTER TABLE public.payments DROP CONSTRAINT IF EXISTS payments_coin_check;
+ALTER TABLE public.payments ADD CONSTRAINT payments_coin_check CHECK (coin = ANY (ARRAY['BTC'::text, 'LTC'::text, 'USDT/TRC20'::text, 'BALANCE'::text, 'ADMIN_ADJUST'::text]));
