@@ -110,26 +110,6 @@ const AdminPayments = () => {
     setAssigningAdmin(false);
   };
 
-  const resolveUser = async (query: string): Promise<{ id: string; username: string | null; banned_at: string | null } | null> => {
-    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (uuidRe.test(query)) {
-      const { data } = await adminClient.from("profiles").select("id, username, banned_at").eq("id", query).maybeSingle();
-      if (!data) { toast.error("No user found", { description: `Nothing matches "${query}".` }); return null; }
-      return data;
-    }
-    const handle = query.includes("@") ? query.split("@")[0] : query;
-    let matches: { id: string; username: string | null; banned_at: string | null }[] = [];
-    const exact = await adminClient.from("profiles").select("id, username, banned_at").ilike("username", handle).limit(2);
-    matches = exact.data ?? [];
-    if (!matches.length) {
-      const partial = await adminClient.from("profiles").select("id, username, banned_at").ilike("username", `%${handle}%`).limit(5);
-      matches = partial.data ?? [];
-    }
-    if (!matches.length) { toast.error("No user found", { description: `Nothing matches "${query}". Check the exact username in Users, or paste their user ID.` }); return null; }
-    if (matches.length > 1) { toast.error("Multiple users match", { description: matches.map((m) => m.username).filter(Boolean).join(", ") }); return null; }
-    return matches[0];
-  };
-
   const adjustBalance = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const query = adjustUser.trim();
@@ -138,11 +118,31 @@ const AdminPayments = () => {
     if (!Number.isFinite(amount) || amount === 0) return toast.error("Enter a non-zero amount");
 
     setAdjusting(true);
-    const user = await resolveUser(query);
-    if (!user) { setAdjusting(false); return; }
+    // Resolve user by id or username
+    let userId: string | null = null;
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRe.test(query)) userId = query;
+    else {
+      // Accept username, email, or partial — strip domain if an email was pasted
+      const handle = query.includes("@") ? query.split("@")[0] : query;
+      let matches: { id: string; username: string | null }[] = [];
+
+      const exact = await adminClient.from("profiles").select("id, username").ilike("username", handle).limit(2);
+      matches = exact.data ?? [];
+
+      if (!matches.length) {
+        const partial = await adminClient.from("profiles").select("id, username").ilike("username", `%${handle}%`).limit(5);
+        matches = partial.data ?? [];
+      }
+
+      if (!matches.length) { setAdjusting(false); return toast.error("No user found", { description: `Nothing matches "${query}". Check the exact username in Users, or paste their user ID.` }); }
+      if (matches.length > 1) { setAdjusting(false); return toast.error("Multiple users match", { description: matches.map((m) => m.username).filter(Boolean).join(", ") }); }
+      userId = matches[0].id;
+    }
+
 
     const { data, error } = await adminClient.rpc("admin_adjust_balance", {
-      _user_id: user.id, _amount: amount, _note: adjustNote.trim() || null,
+      _user_id: userId, _amount: amount, _note: adjustNote.trim() || null,
     });
     if (error) toast.error("Adjustment failed", { description: error.message });
     else {
@@ -151,29 +151,6 @@ const AdminPayments = () => {
       await loadPayments();
     }
     setAdjusting(false);
-  };
-
-  const [banUser, setBanUser] = useState("");
-  const [banning, setBanning] = useState(false);
-
-  const toggleBan = async (ban: boolean) => {
-    const query = banUser.trim();
-    if (!query) return toast.error("Enter a username or user ID");
-    setBanning(true);
-    const user = await resolveUser(query);
-    if (!user) { setBanning(false); return; }
-    if (ban && user.banned_at) { setBanning(false); return toast.info(`${user.username ?? "User"} is already banned`); }
-    if (!ban && !user.banned_at) { setBanning(false); return toast.info(`${user.username ?? "User"} is not banned`); }
-
-    const { data, error } = await adminClient.rpc("admin_set_user_ban", { _user_id: user.id, _banned: ban });
-    if (error) toast.error("Ban update failed", { description: error.message });
-    else {
-      toast.success(ban ? "User banned" : "Ban lifted", {
-        description: `${(data as { username?: string })?.username ?? query} ${ban ? "can no longer buy, check cards, or top up." : "has full access again."}`,
-      });
-      setBanUser("");
-    }
-    setBanning(false);
   };
 
 
@@ -263,21 +240,6 @@ const AdminPayments = () => {
               <Button type="submit" disabled={adjusting} className="shrink-0">{adjusting ? "Applying..." : "Add Balance"}</Button>
               <Input value={adjustNote} onChange={(e) => setAdjustNote(e.target.value)} placeholder="Note (optional)" className="bg-secondary/50 sm:col-span-3" disabled={adjusting} />
             </form>
-          </div>
-        </section>
-
-        <section className="glass rounded-xl border-destructive/30 p-4 md:p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-destructive">Access Control</div>
-              <h2 className="mt-1 font-display text-2xl font-black tracking-tight">Ban a user</h2>
-              <p className="mt-1 text-sm text-muted-foreground">A banned user is blocked from buying, checking cards, and topping up. Lift the ban any time. Admin accounts can't be banned.</p>
-            </div>
-            <div className="grid w-full gap-2 sm:grid-cols-[1fr_auto_auto] lg:max-w-2xl">
-              <Input value={banUser} onChange={(e) => setBanUser(e.target.value)} placeholder="Username or user ID" className="bg-secondary/50" disabled={banning} />
-              <Button variant="destructive" onClick={() => toggleBan(true)} disabled={banning} className="shrink-0">{banning ? "Working..." : "Ban User"}</Button>
-              <Button variant="outline" onClick={() => toggleBan(false)} disabled={banning} className="shrink-0">{banning ? "Working..." : "Lift Ban"}</Button>
-            </div>
           </div>
         </section>
 
