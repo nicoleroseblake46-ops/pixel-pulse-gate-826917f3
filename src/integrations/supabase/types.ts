@@ -200,6 +200,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           balance: number
+          banned_at: string | null
           created_at: string
           id: string
           username: string | null
@@ -207,6 +208,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           balance?: number
+          banned_at?: string | null
           created_at?: string
           id: string
           username?: string | null
@@ -214,6 +216,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           balance?: number
+          banned_at?: string | null
           created_at?: string
           id?: string
           username?: string | null
@@ -393,6 +396,10 @@ export type Database = {
       }
       admin_set_order_delivery: {
         Args: { _delivery: string; _item_index: number; _payment_id: string }
+        Returns: Json
+      }
+      admin_set_user_ban: {
+        Args: { _banned: boolean; _user_id: string }
         Returns: Json
       }
       approve_payment: { Args: { _payment_id: string }; Returns: undefined }
