@@ -266,6 +266,21 @@ const AdminPayments = () => {
           </div>
         </section>
 
+        <section className="glass rounded-xl border-destructive/30 p-4 md:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-destructive">Access Control</div>
+              <h2 className="mt-1 font-display text-2xl font-black tracking-tight">Ban a user</h2>
+              <p className="mt-1 text-sm text-muted-foreground">A banned user is blocked from buying, checking cards, and topping up. Lift the ban any time. Admin accounts can't be banned.</p>
+            </div>
+            <div className="grid w-full gap-2 sm:grid-cols-[1fr_auto_auto] lg:max-w-2xl">
+              <Input value={banUser} onChange={(e) => setBanUser(e.target.value)} placeholder="Username or user ID" className="bg-secondary/50" disabled={banning} />
+              <Button variant="destructive" onClick={() => toggleBan(true)} disabled={banning} className="shrink-0">{banning ? "Working..." : "Ban User"}</Button>
+              <Button variant="outline" onClick={() => toggleBan(false)} disabled={banning} className="shrink-0">{banning ? "Working..." : "Lift Ban"}</Button>
+            </div>
+          </div>
+        </section>
+
 
         <section className="glass rounded-xl p-4 md:p-5">
           {loading ? <Loader /> : (
