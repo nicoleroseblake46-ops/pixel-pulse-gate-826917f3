@@ -915,7 +915,7 @@ const binLookup = async (bin: string): Promise<BinInfo | null> => {
 
 
 // Full realistic name — no masking (delivered as full cardholder identity).
-const fullName = (seed: number) => `${pick(FIRST_NAMES, seed)} ${pick(LAST_NAMES, seed >> 3)}`;
+const fullName = (seed: number) => `${pick(FIRST_NAMES, seed)} ${pick(LAST_NAMES, (seed >> 3) ^ (seed * 31))}`;
 
 const EMAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "proton.me"];
 
@@ -951,7 +951,7 @@ const mockCardDetails = (bin: string, cc: string | null, rowIdx: number) => {
   const pan = (bin + trailing).slice(0, 16);
   const cvv = String(100 + (Math.abs(seed >> 11) % 900));
   const first = pick(FIRST_NAMES, seed);
-  const last = pick(LAST_NAMES, seed >> 3);
+  const last = pick(LAST_NAMES, (seed >> 3) ^ (seed * 31 + rowIdx * 17));
   const name = `${first} ${last}`;
   const domain = pick(EMAIL_DOMAINS, seed >> 13);
   const emailNum = String(Math.abs(seed >> 9) % 900 + 10);
