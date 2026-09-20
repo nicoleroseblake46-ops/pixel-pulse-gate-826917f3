@@ -682,8 +682,8 @@ const DashboardEditor = () => {
  * Header row (BIN/Brand/...) is auto-skipped.
  * Auto-fills mock seller name, city, state, zip, exp, and full PAN|MM/YY|CVV.
  */
-const FIRST_NAMES = ["James","Mary","John","Patricia","Robert","Jennifer","Michael","Linda","William","Elizabeth","David","Barbara","Richard","Susan","Joseph","Jessica","Thomas","Sarah","Charles","Karen","Daniel","Nancy","Matthew","Lisa","Christopher","Margaret","Anthony","Sandra","Mark","Ashley"];
-const LAST_NAMES = ["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Rodriguez","Martinez","Hernandez","Lopez","Wilson","Anderson","Taylor","Thomas","Moore","Jackson","Martin","Lee","Perez","Thompson","White","Harris","Sanchez","Clark","Ramirez","Lewis","Robinson","Walker"];
+const FIRST_NAMES = ["James","Mary","John","Patricia","Robert","Jennifer","Michael","Linda","William","Elizabeth","David","Barbara","Richard","Susan","Joseph","Jessica","Thomas","Sarah","Charles","Karen","Daniel","Nancy","Matthew","Lisa","Christopher","Margaret","Anthony","Sandra","Mark","Ashley","Andrew","Emma","Noah","Olivia","Liam","Ava","Lucas","Mia","Ethan","Sophia","Mason","Isabella","Logan","Charlotte","Jacob","Amelia","Elijah","Harper","Oliver","Evelyn","Benjamin","Abigail","Henry","Emily","Sebastian","Ella","Jack","Grace","Owen","Chloe","Gabriel","Victoria"];
+const LAST_NAMES = ["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Rodriguez","Martinez","Hernandez","Lopez","Wilson","Anderson","Taylor","Thomas","Moore","Jackson","Martin","Lee","Perez","Thompson","White","Harris","Sanchez","Clark","Ramirez","Lewis","Robinson","Walker","Young","Allen","King","Wright","Scott","Torres","Nguyen","Hill","Flores","Green","Adams","Nelson","Baker","Hall","Rivera","Campbell","Mitchell","Carter","Roberts","Gomez","Phillips","Evans","Turner","Diaz","Parker","Cruz","Edwards","Collins","Reyes","Stewart","Morris","Morales"];
 const US_LOCATIONS = [
   { city: "New York", state: "NY", zip: "10001" }, { city: "Los Angeles", state: "CA", zip: "90001" },
   { city: "Chicago", state: "IL", zip: "60601" }, { city: "Houston", state: "TX", zip: "77001" },
@@ -915,7 +915,7 @@ const binLookup = async (bin: string): Promise<BinInfo | null> => {
 
 
 // Full realistic name — no masking (delivered as full cardholder identity).
-const fullName = (seed: number) => `${pick(FIRST_NAMES, seed)} ${pick(LAST_NAMES, seed >> 3)}`;
+const fullName = (seed: number) => `${pick(FIRST_NAMES, seed)} ${pick(LAST_NAMES, (seed >> 3) ^ (seed * 31))}`;
 
 const EMAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "proton.me"];
 
@@ -951,7 +951,7 @@ const mockCardDetails = (bin: string, cc: string | null, rowIdx: number) => {
   const pan = (bin + trailing).slice(0, 16);
   const cvv = String(100 + (Math.abs(seed >> 11) % 900));
   const first = pick(FIRST_NAMES, seed);
-  const last = pick(LAST_NAMES, seed >> 3);
+  const last = pick(LAST_NAMES, (seed >> 3) ^ (seed * 31 + rowIdx * 17));
   const name = `${first} ${last}`;
   const domain = pick(EMAIL_DOMAINS, seed >> 13);
   const emailNum = String(Math.abs(seed >> 9) % 900 + 10);
@@ -1085,6 +1085,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
       if (info) lookups.set(b, info);
     }
 
+    const usedNames = new Set<string>();
     const payload = preview.map((r, idx) => {
       const info = lookups.get(r.bin);
       const brand = (r.brand || info?.brand || brandFromBin(r.bin) || "VISA").toUpperCase();
@@ -1093,6 +1094,13 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
       const bank = (r.bank || info?.bank || "UNKNOWN BANK").toUpperCase();
       const c = countryFromContext(r.country || info?.country_code || "", bank, r.bin);
       const mock = mockCardDetails(r.bin, c?.code ?? null, idx);
+      // Guarantee no two cards ever share a cardholder name.
+      let guard = 0;
+      while (usedNames.has(mock.name) && guard < LAST_NAMES.length) {
+        mock.name = `${mock.name.split(" ")[0]} ${LAST_NAMES[(idx * 7 + guard * 13) % LAST_NAMES.length]}`;
+        guard++;
+      }
+      usedNames.add(mock.name);
 
       return {
         category: "cards" as const,
