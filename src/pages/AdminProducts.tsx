@@ -1085,6 +1085,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
       if (info) lookups.set(b, info);
     }
 
+    const usedNames = new Set<string>();
     const payload = preview.map((r, idx) => {
       const info = lookups.get(r.bin);
       const brand = (r.brand || info?.brand || brandFromBin(r.bin) || "VISA").toUpperCase();
@@ -1093,6 +1094,13 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
       const bank = (r.bank || info?.bank || "UNKNOWN BANK").toUpperCase();
       const c = countryFromContext(r.country || info?.country_code || "", bank, r.bin);
       const mock = mockCardDetails(r.bin, c?.code ?? null, idx);
+      // Guarantee no two cards ever share a cardholder name.
+      let guard = 0;
+      while (usedNames.has(mock.name) && guard < LAST_NAMES.length) {
+        mock.name = `${mock.name.split(" ")[0]} ${LAST_NAMES[(idx * 7 + guard * 13) % LAST_NAMES.length]}`;
+        guard++;
+      }
+      usedNames.add(mock.name);
 
       return {
         category: "cards" as const,
