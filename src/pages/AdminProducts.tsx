@@ -682,8 +682,9 @@ const DashboardEditor = () => {
  * Header row (BIN/Brand/...) is auto-skipped.
  * Auto-fills mock seller name, city, state, zip, exp, and full PAN|MM/YY|CVV.
  */
-const FIRST_NAMES = ["James","Mary","John","Patricia","Robert","Jennifer","Michael","Linda","William","Elizabeth","David","Barbara","Richard","Susan","Joseph","Jessica","Thomas","Sarah","Charles","Karen","Daniel","Nancy","Matthew","Lisa","Christopher","Margaret","Anthony","Sandra","Mark","Ashley"];
-const LAST_NAMES = ["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Rodriguez","Martinez","Hernandez","Lopez","Wilson","Anderson","Taylor","Thomas","Moore","Jackson","Martin","Lee","Perez","Thompson","White","Harris","Sanchez","Clark","Ramirez","Lewis","Robinson","Walker"];
+const FIRST_NAMES = ["James","Mary","John","Patricia","Robert","Jennifer","Michael","Linda","William","Elizabeth","David","Barbara","Richard","Susan","Joseph","Jessica","Thomas","Sarah","Charles","Karen","Daniel","Nancy","Matthew","Lisa","Christopher","Margaret","Anthony","Sandra","Mark","Ashley","Andrew","Emily","Paul","Donna","Steven","Michelle","Kenneth","Carol","Joshua","Amanda","Kevin","Melissa","Brian","Deborah","George","Stephanie","Edward","Rebecca","Ronald","Laura","Timothy","Sharon","Jason","Cynthia","Jeffrey","Kathleen","Ryan","Amy","Jacob","Angela","Gary","Shirley","Nicholas","Brenda","Eric","Pamela","Stephen","Nicole","Jonathan","Katherine","Larry","Samantha","Justin","Christine","Scott","Rachel","Brandon","Catherine","Benjamin","Olivia","Samuel","Julia","Frank","Heather","Gregory","Diane","Raymond","Victoria","Alexander","Joan","Patrick","Kelly","Jack","Christina","Dennis","Lauren","Jerry","Joyce"];
+const LAST_NAMES = ["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Rodriguez","Martinez","Hernandez","Lopez","Wilson","Anderson","Taylor","Thomas","Moore","Jackson","Martin","Lee","Perez","Thompson","White","Harris","Sanchez","Clark","Ramirez","Lewis","Robinson","Walker","Young","Allen","King","Wright","Scott","Torres","Nguyen","Hill","Flores","Green","Adams","Nelson","Baker","Hall","Rivera","Campbell","Mitchell","Carter","Roberts","Gomez","Phillips","Evans","Turner","Diaz","Parker","Cruz","Edwards","Collins","Reyes","Stewart","Morris","Morales","Murphy","Cook","Rogers","Gutierrez","Ortiz","Morgan","Cooper","Peterson","Bailey","Reed","Kelly","Howard","Ramos","Kim","Cox","Ward","Richardson","Watson","Brooks","Chavez","Wood","Bennett","Gray","Mendoza","Ruiz","Hughes","Price","Alvarez","Castillo","Sanders","Patel","Myers","Long","Ross","Foster","Jimenez"];
+
 const US_LOCATIONS = [
   { city: "New York", state: "NY", zip: "10001" }, { city: "Los Angeles", state: "CA", zip: "90001" },
   { city: "Chicago", state: "IL", zip: "60601" }, { city: "Houston", state: "TX", zip: "77001" },
@@ -753,8 +754,16 @@ const LOC_BY_CC: Record<string, { city: string; state: string; zip: string }[]> 
   VE: [{ city: "Caracas", state: "DC", zip: "1010" }, { city: "Maracaibo", state: "ZUL", zip: "4001" }, { city: "Valencia", state: "CAR", zip: "2001" }],
   CM: [{ city: "Douala", state: "LT", zip: "00237" }, { city: "Yaoundé", state: "CE", zip: "00237" }, { city: "Bamenda", state: "NW", zip: "00237" }],
 };
-const pick = <T,>(arr: T[], seed: number) => arr[Math.abs(seed) % arr.length];
-const seedFromString = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; };
+// Avalanche mixer — without this, hash % poolSize collapses onto a few values.
+const mixSeed = (n: number) => {
+  let x = n | 0;
+  x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+  x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+  return (x ^ (x >>> 16)) | 0;
+};
+const pick = <T,>(arr: T[], seed: number) => arr[Math.abs(mixSeed(seed)) % arr.length];
+const seedFromString = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return mixSeed(h); };
+
 
 const brandFromBin = (bin: string): string => {
   const d1 = bin[0];
