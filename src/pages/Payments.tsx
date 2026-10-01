@@ -27,6 +27,7 @@ const Payments = () => {
   const [pickedCoin, setCoin] = useState<CoinKey>("BTC");
   const coin: CoinKey = enabledCoins.includes(pickedCoin) ? pickedCoin : (enabledCoins[0] ?? "BTC");
   const [copied, setCopied] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [copiedAmount, setCopiedAmount] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
@@ -38,8 +39,11 @@ const Payments = () => {
   const cryptoAmount = checkoutAmount > 0 && rate > 0 ? checkoutAmount / rate : 0;
   const cryptoDisplay = formatCrypto(cryptoAmount, coin);
 
+  const addressCopied = copiedAddress === `${coin}:${walletAddress}`;
+
   const copyWallet = async () => {
     const ok = await copyToClipboard(walletAddress);
+    setCopiedAddress(`${coin}:${walletAddress}`);
     if (ok) {
       setCopied(true);
       toast.success("Wallet copied");
@@ -64,6 +68,10 @@ const Payments = () => {
   const checkout = async () => {
     if (!checkoutAmount || checkoutAmount < MIN_DEPOSIT) {
       toast.error(`Minimum deposit is $${MIN_DEPOSIT}`);
+      return;
+    }
+    if (!addressCopied) {
+      toast.error("Copy the payment address first", { description: "Tap \"Copy address\" and send your payment before submitting." });
       return;
     }
 
@@ -261,9 +269,12 @@ const Payments = () => {
             </div>
           </div>
 
-          <div className="mt-5 flex flex-col-reverse items-stretch justify-end gap-3 sm:flex-row sm:items-center sm:gap-4">
+          {!addressCopied && (
+            <p className="mt-4 text-right text-xs font-semibold text-amber-600">Copy the {coin} address above to unlock Submit.</p>
+          )}
+          <div className="mt-3 flex flex-col-reverse items-stretch justify-end gap-3 sm:flex-row sm:items-center sm:gap-4">
             <Button variant="ghost" onClick={() => { setAmount(""); setSelected(null); }}>Cancel</Button>
-            <Button onClick={checkout} disabled={submitting} className="h-11 bg-gradient-primary px-8 font-display font-bold text-background glow-primary hover:opacity-90">
+            <Button onClick={checkout} disabled={submitting || !addressCopied} className="h-11 bg-gradient-primary px-8 font-display font-bold text-background glow-primary hover:opacity-90">
               {submitting ? "Submitting..." : "Submit Top Up"}
             </Button>
           </div>

@@ -47,18 +47,32 @@ const AdminTickets = () => {
     loadTickets();
   };
 
+  const deleteMany = async (mode: "closed" | "all") => {
+    const ids = tickets.filter((t) => mode === "all" || t.status !== "open").map((t) => t.id);
+    if (!ids.length) return toast.info("Nothing to delete");
+    if (!confirm(`Delete ${ids.length} ticket(s)? This cannot be undone.`)) return;
+    const { error } = await (supabase as any).from("tickets").delete().in("id", ids);
+    if (error) return toast.error("Delete failed", { description: error.message });
+    toast.success(`${ids.length} ticket(s) deleted`);
+    loadTickets();
+  };
+
   if (adminLoading) return <Loader />;
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
     <AppLayout>
       <div className="animate-fade-up space-y-6">
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="font-mono text-xs uppercase tracking-normal text-primary">Admin Console</div>
             <h1 className="font-display text-4xl font-black">Ticket Control</h1>
           </div>
-          <Button variant="secondary" onClick={loadTickets} disabled={loading}><RefreshCw className="h-4 w-4" /> Refresh</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={loadTickets} disabled={loading}><RefreshCw className="h-4 w-4" /> Refresh</Button>
+            <Button variant="outline" onClick={() => deleteMany("closed")}><Trash2 className="h-4 w-4" /> Delete answered/closed</Button>
+            <Button variant="destructive" onClick={() => deleteMany("all")}><Trash2 className="h-4 w-4" /> Delete all</Button>
+          </div>
         </div>
 
         {loading ? <Loader /> : tickets.map((ticket) => (

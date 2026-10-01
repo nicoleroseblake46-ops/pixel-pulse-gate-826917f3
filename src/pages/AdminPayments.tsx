@@ -25,7 +25,7 @@ type Payment = {
   refund_reason?: string | null;
 };
 
-type Profile = { id: string; username: string | null; balance: number };
+type Profile = { id: string; username: string | null; balance: number; banned_at?: string | null };
 
 const adminClient = supabase as any;
 
@@ -41,6 +41,7 @@ const AdminPayments = () => {
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustNote, setAdjustNote] = useState("");
   const [adjusting, setAdjusting] = useState(false);
+  const [banUser, setBanUser] = useState("");
 
 
   const pendingCount = useMemo(() => payments.filter((payment) => payment.status === "pending").length, [payments]);
@@ -55,7 +56,7 @@ const AdminPayments = () => {
     if (paymentError) throw paymentError;
 
     const userIds = [...new Set((paymentRows as Payment[]).map((payment) => payment.user_id))];
-    const { data: profileRows, error: profileError } = await adminClient.from("profiles").select("id, username, balance").in("id", userIds);
+    const { data: profileRows, error: profileError } = await adminClient.from("profiles").select("id, username, balance, banned_at").in("id", userIds);
     if (profileError) throw profileError;
 
     setPayments(paymentRows as Payment[]);
@@ -153,6 +154,40 @@ const AdminPayments = () => {
     setAdjusting(false);
   };
 
+  const resolveUserId = async (query: string): Promise<string | null> => {
+    const q = query.trim();
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)) return q;
+    const handle = q.includes("@") ? q.split("@")[0] : q;
+    const { data } = await adminClient.from("profiles").select("id").ilike("username", handle).limit(2);
+    if (!data?.length) { toast.error("No user found", { description: q }); return null; }
+    if (data.length > 1) { toast.error("Multiple users match"); return null; }
+    return data[0].id;
+  };
+
+  const setBan = async (userId: string, banned: boolean) => {
+    const { error } = await adminClient.rpc("admin_set_user_ban", { _user_id: userId, _banned: banned });
+    if (error) return toast.error(banned ? "Ban failed" : "Unban failed", { description: error.message });
+    toast.success(banned ? "User banned" : "User unbanned");
+    await loadPayments();
+  };
+
+  const banByName = async (banned: boolean) => {
+    if (!banUser.trim()) return toast.error("Enter a username or user ID");
+    const id = await resolveUserId(banUser);
+    if (!id) return;
+    await setBan(id, banned);
+    setBanUser("");
+  };
+
+  const deleteHistory = async () => {
+    const ids = payments.filter((p) => p.status !== "pending" && p.refund_status !== "requested").map((p) => p.id);
+    if (!ids.length) return toast.info("No reviewed history to delete");
+    if (!confirm(`Delete ${ids.length} reviewed payment record(s)? Balances are not changed.`)) return;
+    const { error } = await adminClient.from("payments").delete().in("id", ids);
+    if (error) return toast.error("Delete failed", { description: error.message });
+    toast.success(`${ids.length} record(s) deleted`);
+    await loadPayments();
+  };
 
   if (adminLoading) return <Loader />;
   if (!isAdmin) return <Navigate to="/" replace />;
