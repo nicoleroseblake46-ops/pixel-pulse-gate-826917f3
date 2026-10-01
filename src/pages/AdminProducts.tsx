@@ -261,6 +261,8 @@ const AdminProducts = () => {
           </div>
         </section>
 
+        <PaymentMethodsEditor />
+
         <DashboardEditor />
 
 
@@ -950,10 +952,28 @@ const PHONE_FMT: Record<string, { dial: string; len: number }> = {
   PE: { dial: "+51", len: 9 }, VE: { dial: "+58", len: 10 }, CM: { dial: "+237", len: 9 },
 };
 
+// Shuffled deck per country: every city/state is used once before any repeats.
+const LOC_DECKS: Record<string, { city: string; state: string; zip: string }[]> = {};
+const LAST_LOC: Record<string, string> = {};
+const nextLocation = (key: string, locs: { city: string; state: string; zip: string }[]) => {
+  let deck = LOC_DECKS[key];
+  if (!deck || !deck.length) {
+    deck = [...locs];
+    for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+    // avoid same city back-to-back across reshuffles
+    if (deck.length > 1 && `${deck[deck.length - 1].city}|${deck[deck.length - 1].state}` === LAST_LOC[key]) deck.unshift(deck.pop()!);
+    LOC_DECKS[key] = deck;
+  }
+  const loc = deck.pop()!;
+  LAST_LOC[key] = `${loc.city}|${loc.state}`;
+  return loc;
+};
+
 const mockCardDetails = (bin: string, cc: string | null, rowIdx: number) => {
   const seed = seedFromString(`${bin}:${cc ?? ""}:${rowIdx}:${Math.random().toString(36).slice(2, 10)}`);
-  const locs = LOC_BY_CC[cc ?? ""] ?? LOC_BY_CC[cc ?? "US"] ?? US_LOCATIONS;
-  const loc = pick(locs, seed >> 5);
+  const locKey = LOC_BY_CC[cc ?? ""] ? (cc as string) : "US";
+  const locs = LOC_BY_CC[cc ?? ""] ?? LOC_BY_CC["US"] ?? US_LOCATIONS;
+  const loc = nextLocation(locKey, locs);
   const month = String(((Math.abs(seed) % 12) + 1)).padStart(2, "0");
   const year = String(26 + (Math.abs(seed >> 7) % 4));
   const trailing = String(Math.floor(1000000000 + Math.abs(seed * 2654435761) % 9000000000)).slice(0, 10);
