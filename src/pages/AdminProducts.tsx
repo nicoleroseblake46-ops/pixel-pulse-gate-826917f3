@@ -209,6 +209,15 @@ const AdminProducts = () => {
   };
 
   const counts = useMemo(() => items.length, [items]);
+  const [binQuery, setBinQuery] = useState("");
+  const filteredItems = useMemo(() => {
+    const q = binQuery.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((p: any) =>
+      [p.bin, p.full_card, p.bank, p.country, p.country_code, p.name, p.seller, p.brand]
+        .some((v) => v && String(v).toLowerCase().includes(q)),
+    );
+  }, [items, binQuery]);
 
   if (adminLoading) return <Loader />;
   if (!isAdmin) return <Navigate to="/" replace />;
@@ -476,17 +485,25 @@ const AdminProducts = () => {
 
 
               <section className="space-y-3">
-                <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
-                  <Package className="h-4 w-4" /> {counts} items in {c.label}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
+                    <Package className="h-4 w-4" /> {counts} items in {c.label}
+                  </div>
+                  <Input
+                    value={binQuery}
+                    onChange={(e) => setBinQuery(e.target.value)}
+                    placeholder="Search BIN, bank, country, name…"
+                    className="h-9 w-full max-w-xs font-mono"
+                  />
                 </div>
                 {loading ? (
                   <Loader />
-                ) : !items.length ? (
+                ) : !filteredItems.length ? (
                   <div className="rounded-lg border border-border bg-card/60 px-5 py-10 text-center text-muted-foreground">
-                    Nothing here yet. Add your first item above.
+                    {binQuery ? "No card matches that search." : "Nothing here yet. Add your first item above."}
                   </div>
                 ) : (
-                  items.map((p) => (
+                  filteredItems.map((p) => (
                     <Fragment key={p.id}>
                     <article className="grid gap-3 rounded-lg border border-border bg-card/60 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                       <div className="min-w-0">
