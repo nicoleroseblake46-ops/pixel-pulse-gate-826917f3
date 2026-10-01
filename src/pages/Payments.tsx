@@ -10,11 +10,7 @@ import { useAppSettings } from "@/hooks/use-app-settings";
 import { copyToClipboard } from "@/lib/clipboard";
 import { toast } from "sonner";
 
-const wallets = {
-  BTC: "bc1qrz7zdzjrht9njz24zhpzvyta82yqdpa59cthsq",
-  LTC: "ltc1qu78zvrz0u6n0z4cxn34280p9fag6qrjxunz442",
-  "USDT/TRC20": "TBTM7mbjaptqK2sKr8hxqDSMdmaQawd2t8",
-};
+import { COINS, resolveMethods, type CoinKey } from "@/lib/payment-methods";
 const presetAmounts = [20, 50, 100, 200, 500];
 const bonuses: Record<number, number> = { 100: 8, 200: 20, 500: 65, 1000: 150 };
 
@@ -26,7 +22,10 @@ const Payments = () => {
   const MIN_DEPOSIT = Math.max(0, Number(settings.min_deposit ?? 20));
   const [amount, setAmount] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
-  const [coin, setCoin] = useState<keyof typeof wallets>("BTC");
+  const methods = resolveMethods(settings.payment_methods);
+  const enabledCoins = COINS.filter((c) => methods[c].enabled);
+  const [pickedCoin, setCoin] = useState<CoinKey>("BTC");
+  const coin: CoinKey = enabledCoins.includes(pickedCoin) ? pickedCoin : (enabledCoins[0] ?? "BTC");
   const [copied, setCopied] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -34,7 +33,7 @@ const Payments = () => {
 
   const checkoutAmount = selected ?? Number(amount);
   const bonus = bonuses[checkoutAmount] ?? 0;
-  const walletAddress = wallets[coin];
+  const walletAddress = methods[coin].address;
   const rate = rates[coin];
   const cryptoAmount = checkoutAmount > 0 && rate > 0 ? checkoutAmount / rate : 0;
   const cryptoDisplay = formatCrypto(cryptoAmount, coin);
@@ -199,7 +198,7 @@ const Payments = () => {
           />
 
           <div className="mt-4 grid grid-cols-3 gap-3">
-            {(Object.keys(wallets) as (keyof typeof wallets)[]).map((value) => (
+            {enabledCoins.map((value) => (
               <button key={value} onClick={() => setCoin(value)} className={`rounded-lg border p-3 font-display font-bold transition-smooth ${coin === value ? "border-primary bg-primary text-primary-foreground glow-primary" : "border-border bg-secondary/20 hover:border-primary/60"}`}>
                 {value}
               </button>
