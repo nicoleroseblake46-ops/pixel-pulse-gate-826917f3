@@ -210,9 +210,6 @@ const Dashboard = () => {
       <section className="mb-6 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-background to-accent/10 p-5 shadow-sm md:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-primary">
-              Nexus CC
-            </div>
             <h1 className="font-display text-2xl font-black tracking-tight md:text-3xl">Dashboard</h1>
           </div>
           <div className="flex gap-2">
