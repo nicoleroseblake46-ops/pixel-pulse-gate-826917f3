@@ -201,7 +201,10 @@ const AdminPayments = () => {
             <h1 className="mt-2 font-display text-4xl font-black tracking-tight neon-text md:text-5xl">Payment Review</h1>
             <p className="mt-2 text-muted-foreground">Approve deposits only after confirmation. Rejections never change balances.</p>
           </div>
-          <Button variant="secondary" onClick={() => loadPayments()} disabled={loading}>Refresh</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => loadPayments()} disabled={loading}>Refresh</Button>
+            <Button variant="destructive" onClick={deleteHistory} disabled={loading}>Delete reviewed history</Button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -278,6 +281,21 @@ const AdminPayments = () => {
           </div>
         </section>
 
+
+        <section className="glass rounded-xl p-4 md:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Account Control</div>
+              <h2 className="mt-1 font-display text-2xl font-black tracking-tight">Ban or unban a user</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Banned users cannot buy or use the checker. Admins cannot be banned.</p>
+            </div>
+            <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-xl">
+              <Input value={banUser} onChange={(e) => setBanUser(e.target.value)} placeholder="Username or user ID" className="bg-secondary/50" />
+              <Button variant="destructive" className="shrink-0" onClick={() => banByName(true)}>Ban</Button>
+              <Button variant="secondary" className="shrink-0" onClick={() => banByName(false)}>Unban</Button>
+            </div>
+          </div>
+        </section>
 
         <section className="glass rounded-xl p-4 md:p-5">
           {loading ? <Loader /> : (
