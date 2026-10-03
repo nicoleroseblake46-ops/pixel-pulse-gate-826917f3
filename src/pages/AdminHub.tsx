@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, NavLink } from "react-router-dom";
 import {
   Check, X, RefreshCw, ShieldCheck, MessageSquareText, Package,
-  FilePenLine, Globe, Wallet, ArrowRight, Clock, Send, Trash2,
+  FilePenLine, Globe, Wallet, ArrowRight, Clock, Send, Trash2, Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
@@ -27,6 +27,7 @@ type Ticket = {
 type Profile = { id: string; username: string | null };
 
 const tiles = [
+  { label: "Accounts",  to: "/admin/users",    icon: Users, hint: "Signups, join times, balances" },
   { label: "Inventory", to: "/admin/products", icon: Package, hint: "Products, cards, pricing" },
   { label: "News",      to: "/admin/news",     icon: FilePenLine, hint: "Announcements & updates" },
   { label: "Payments",  to: "/admin/payments", icon: Wallet, hint: "Deposits, refunds, top-ups" },
