@@ -25,6 +25,7 @@ import Tickets from "./pages/Tickets";
 import Bases from "./pages/Bases";
 import NotFound from "./pages/NotFound.tsx";
 import AdminVisitors from "./pages/AdminVisitors";
+import AdminUsers from "./pages/AdminUsers";
 import { useVisitorTracking } from "./hooks/use-visitor-tracking";
 
 const VisitorTracker = () => {
@@ -93,7 +94,8 @@ const App = () => (
                 <Route path="/admin/products" element={<ProtectedRoute><AdminProducts /></ProtectedRoute>} />
                 <Route path="/admin/payments" element={<ProtectedRoute><AdminPayments /></ProtectedRoute>} />
                 <Route path="/admin/visitors" element={<ProtectedRoute><AdminVisitors /></ProtectedRoute>} />
-                <Route path="/admin/orders" element={<ProtectedRoute><AdminOrders /></ProtectedRoute>} />
+<Route path="/admin/orders" element={<ProtectedRoute><AdminOrders /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
