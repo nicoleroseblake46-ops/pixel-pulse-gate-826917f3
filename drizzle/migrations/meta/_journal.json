@@ -36,6 +36,13 @@
       "when": 1790853310582,
       "tag": "0004_admin_delete_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791029520092,
+      "tag": "0005_harden_settings_and_storage",
+      "breakpoints": true
     }
   ]
 }
