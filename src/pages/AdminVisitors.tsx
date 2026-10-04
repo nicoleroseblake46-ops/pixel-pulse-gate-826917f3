@@ -78,7 +78,16 @@ const AdminVisitors = () => {
           });
         }
       }
-      const list = Array.from(byIp.values()).slice(0, 300);
+      // Order by account first (signed-in users grouped together, most recent first),
+      // then guests, so each unique account's IPs and locations sit next to each other.
+      const list = Array.from(byIp.values())
+        .sort((a, b) => {
+          if (a.user_id && !b.user_id) return -1;
+          if (!a.user_id && b.user_id) return 1;
+          if (a.user_id && b.user_id && a.user_id !== b.user_id) return a.user_id.localeCompare(b.user_id);
+          return b.lastSeen.localeCompare(a.lastSeen);
+        })
+        .slice(0, 300);
       setRows(list);
       setLoading(false);
 
