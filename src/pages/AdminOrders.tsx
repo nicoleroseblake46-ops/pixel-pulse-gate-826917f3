@@ -43,6 +43,7 @@ const AdminOrders = () => {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [picked, setPicked] = useState<Set<string>>(new Set());
 
   const load = async () => {
     setLoading(true);
@@ -60,6 +61,7 @@ const AdminOrders = () => {
       setProfiles(Object.fromEntries((profs ?? []).map((p: Profile) => [p.id, p])));
     }
     setOrders((data ?? []) as Order[]);
+    setPicked(new Set());
     setLoading(false);
   };
 
@@ -95,6 +97,36 @@ const AdminOrders = () => {
     () => orders.reduce((s, o) => s + Number(o.cart_total || 0), 0),
     [orders]
   );
+
+  const visibleOrderIds = useMemo(() => [...new Set(flat.map((r) => r.orderId))], [flat]);
+  const allPicked = visibleOrderIds.length > 0 && visibleOrderIds.every((id) => picked.has(id));
+
+  const togglePick = (orderId: string) =>
+    setPicked((current) => {
+      const next = new Set(current);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+
+  const toggleAllPicked = () =>
+    setPicked((current) => {
+      const next = new Set(current);
+      if (allPicked) visibleOrderIds.forEach((id) => next.delete(id));
+      else visibleOrderIds.forEach((id) => next.add(id));
+      return next;
+    });
+
+  const deletePicked = async () => {
+    const ids = [...picked];
+    if (!ids.length) return toast.info("Select orders first");
+    if (!confirm(`Delete ${ids.length} order(s)? This cannot be undone.`)) return;
+    setBusy(true);
+    const { error } = await client.from("payments").delete().in("id", ids);
+    if (error) toast.error("Delete failed", { description: error.message });
+    else { toast.success(`${ids.length} order(s) deleted`); await load(); }
+    setBusy(false);
+  };
 
   const saveDelivery = async (orderId: string, index: number) => {
     setBusy(true);
