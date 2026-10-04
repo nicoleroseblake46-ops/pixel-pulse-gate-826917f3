@@ -394,6 +394,7 @@ export type Database = {
         Args: { _amount: number; _note?: string; _user_id: string }
         Returns: number
       }
+      admin_delete_users: { Args: { _user_ids: string[] }; Returns: number }
       admin_set_order_delivery: {
         Args: { _delivery: string; _item_index: number; _payment_id: string }
         Returns: Json
@@ -401,6 +402,10 @@ export type Database = {
       admin_set_user_ban: {
         Args: { _banned: boolean; _user_id: string }
         Returns: Json
+      }
+      admin_set_user_bans: {
+        Args: { _banned: boolean; _user_ids: string[] }
+        Returns: number
       }
       approve_payment: { Args: { _payment_id: string }; Returns: undefined }
       assign_admin_role_by_email: { Args: { _email: string }; Returns: Json }

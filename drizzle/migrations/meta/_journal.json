@@ -43,6 +43,13 @@
       "when": 1791029520092,
       "tag": "0005_harden_settings_and_storage",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791096687012,
+      "tag": "0006_bulk_admin_user_actions",
+      "breakpoints": true
     }
   ]
 }
