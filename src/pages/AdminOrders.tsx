@@ -189,6 +189,9 @@ const AdminOrders = () => {
             <Button variant="secondary" onClick={load} disabled={loading || busy}>
               <RefreshCw className="h-4 w-4" /> Refresh
             </Button>
+            <Button variant="outline" onClick={deletePicked} disabled={loading || busy || !picked.size}>
+              <Trash2 className="h-4 w-4" /> Delete selected{picked.size ? ` (${picked.size})` : ""}
+            </Button>
             <Button variant="destructive" onClick={deleteAllOrders} disabled={loading || busy || !orders.length}>
               <Trash2 className="h-4 w-4" /> Delete all
             </Button>
@@ -237,6 +240,15 @@ const AdminOrders = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-8">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all orders"
+                        checked={allPicked}
+                        onChange={toggleAllPicked}
+                        className="h-4 w-4 cursor-pointer accent-primary"
+                      />
+                    </TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead>Price</TableHead>
@@ -248,6 +260,15 @@ const AdminOrders = () => {
                 <TableBody>
                   {flat.map((r) => (
                     <TableRow key={r.key}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          aria-label={`Select order ${r.orderId.slice(0, 8)}`}
+                          checked={picked.has(r.orderId)}
+                          onChange={() => togglePick(r.orderId)}
+                          className="h-4 w-4 cursor-pointer accent-primary"
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium">{r.username}</div>
                         <div className="font-mono text-[10px] text-muted-foreground">{r.userId.slice(0, 8)}</div>
