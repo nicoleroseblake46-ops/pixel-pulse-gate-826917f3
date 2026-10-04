@@ -37,9 +37,10 @@ const AdminVisitors = () => {
   useEffect(() => {
     if (!isAdmin) return;
     (async () => {
-      // Exclude staff/admin traffic so this only shows real site visitors
-      const [{ data: roles }, { data, error }] = await Promise.all([
+      // Exclude staff/admin traffic (including your own account) so this only shows real site visitors
+      const [{ data: roles }, { data: authData }, { data, error }] = await Promise.all([
         supabase.from("user_roles").select("user_id").eq("role", "admin"),
+        supabase.auth.getUser(),
         supabase
           .from("visitor_logs")
           .select("*")
@@ -52,6 +53,8 @@ const AdminVisitors = () => {
         return;
       }
       const adminIds = new Set((roles || []).map((r: { user_id: string }) => r.user_id));
+      const myId = authData?.user?.id;
+      if (myId) adminIds.add(myId);
       const logs = ((data as VisitorLog[]) || []).filter((l) => !(l.user_id && adminIds.has(l.user_id)));
 
       // Collapse to one row per unique IP (most recent visit wins)
