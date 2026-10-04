@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { RefreshCw, ShoppingBag, Search } from "lucide-react";
+import { RefreshCw, ShoppingBag, Search, Trash2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { Loader } from "@/components/Loader";
 import { Button } from "@/components/ui/button";
@@ -106,6 +106,25 @@ const AdminOrders = () => {
     setBusy(false);
   };
 
+  const deleteOrder = async (orderId: string) => {
+    if (!confirm("Delete this order? This cannot be undone.")) return;
+    setBusy(true);
+    const { error } = await client.from("payments").delete().eq("id", orderId);
+    if (error) toast.error("Delete failed", { description: error.message });
+    else { toast.success("Order deleted"); await load(); }
+    setBusy(false);
+  };
+
+  const deleteAllOrders = async () => {
+    if (!orders.length) return toast.info("Nothing to delete");
+    if (!confirm(`Delete all ${orders.length} order(s)? This cannot be undone.`)) return;
+    setBusy(true);
+    const { error } = await client.from("payments").delete().in("id", orders.map((o) => o.id));
+    if (error) toast.error("Delete failed", { description: error.message });
+    else { toast.success("All orders deleted"); await load(); }
+    setBusy(false);
+  };
+
   const addMoney = async () => {
     if (!topUp) return;
     const amount = Number(topUpAmount);
@@ -134,9 +153,14 @@ const AdminOrders = () => {
             <h1 className="mt-2 font-display text-4xl font-black tracking-tight md:text-5xl">Client Purchases</h1>
             <p className="mt-2 text-muted-foreground">Every item every user has bought, with delivery details.</p>
           </div>
-          <Button variant="secondary" onClick={load} disabled={loading}>
-            <RefreshCw className="h-4 w-4" /> Refresh
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={load} disabled={loading || busy}>
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </Button>
+            <Button variant="destructive" onClick={deleteAllOrders} disabled={loading || busy || !orders.length}>
+              <Trash2 className="h-4 w-4" /> Delete all
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -230,6 +254,10 @@ const AdminOrders = () => {
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="font-mono text-[10px]">#{r.orderId.slice(0, 8)}</Badge>
+                        <Button size="sm" variant="ghost" className="mt-1 h-6 px-2 text-[11px] text-destructive"
+                          disabled={busy} onClick={() => deleteOrder(r.orderId)}>
+                          <Trash2 className="h-3 w-3" /> Delete
+                        </Button>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {new Date(r.createdAt).toLocaleString()}
