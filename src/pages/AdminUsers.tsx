@@ -43,6 +43,8 @@ const AdminUsers = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [adjustFor, setAdjustFor] = useState<string | null>(null);
+  const [adjustAmount, setAdjustAmount] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -132,6 +134,29 @@ const AdminUsers = () => {
     const { error } = await supabase.rpc("admin_delete_users", { _user_ids: [p.id] });
     if (error) toast.error("Delete failed", { description: error.message });
     else toast.success("Account deleted");
+    await load();
+    setBusy(false);
+  };
+
+  const adjust = async (p: Profile, sign: 1 | -1) => {
+    const value = Number(adjustAmount);
+    if (!Number.isFinite(value) || value <= 0) return toast.info("Enter an amount greater than 0");
+    const delta = sign * value;
+    if (sign < 0 && Number(p.balance || 0) < value && !confirm("This takes the balance below zero. Continue?")) return;
+    setBusy(true);
+    const { data, error } = await supabase.rpc("admin_adjust_balance", {
+      _user_id: p.id,
+      _amount: delta,
+      _note: sign > 0 ? "Admin add (accounts page)" : "Admin deduct (accounts page)",
+    });
+    if (error) toast.error("Adjustment failed", { description: error.message });
+    else {
+      toast.success(`${sign > 0 ? "Added" : "Deducted"} $${value.toFixed(2)}`, {
+        description: `New balance: $${Number(data ?? 0).toFixed(2)}`,
+      });
+      setAdjustFor(null);
+      setAdjustAmount("");
+    }
     await load();
     setBusy(false);
   };
