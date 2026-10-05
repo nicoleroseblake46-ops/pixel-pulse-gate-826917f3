@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Users, RefreshCw, Search, Ban, Trash2, RotateCcw } from "lucide-react";
+import { Users, RefreshCw, Search, Ban, Trash2, RotateCcw, Wallet, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { Loader } from "@/components/Loader";
@@ -294,6 +294,18 @@ const AdminUsers = () => {
                         variant="ghost"
                         className="h-7 px-2 text-[11px]"
                         disabled={busy}
+                        onClick={() => {
+                          setAdjustFor(adjustFor === p.id ? null : p.id);
+                          setAdjustAmount("");
+                        }}
+                      >
+                        <Wallet className="h-3 w-3" /> Balance
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[11px]"
+                        disabled={busy}
                         onClick={() => singleBan(p, !p.banned_at)}
                       >
                         {p.banned_at ? <RotateCcw className="h-3 w-3" /> : <Ban className="h-3 w-3" />}
@@ -309,6 +321,32 @@ const AdminUsers = () => {
                         <Trash2 className="h-3 w-3" /> Delete
                       </Button>
                     </div>
+                    {adjustFor === p.id && (
+                      <div className="col-span-full flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background/60 p-3">
+                        <span className="text-xs text-muted-foreground">
+                          Current: <span className="font-mono text-foreground">${Number(p.balance || 0).toFixed(2)}</span>
+                        </span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          autoFocus
+                          value={adjustAmount}
+                          onChange={(e) => setAdjustAmount(e.target.value)}
+                          placeholder="Amount"
+                          className="h-8 w-32 bg-input"
+                        />
+                        <Button size="sm" className="h-8" disabled={busy} onClick={() => adjust(p, 1)}>
+                          <Plus className="h-3 w-3" /> Add
+                        </Button>
+                        <Button size="sm" variant="destructive" className="h-8" disabled={busy} onClick={() => adjust(p, -1)}>
+                          <Minus className="h-3 w-3" /> Deduct
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8" onClick={() => setAdjustFor(null)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
                   </li>
                 );
               })}
