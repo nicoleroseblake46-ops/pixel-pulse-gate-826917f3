@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 type Ticket = { id: string; subject: string; message: string; status: string; admin_reply: string | null; created_at: string };
 
@@ -22,13 +23,28 @@ const Tickets = () => {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [balance, setBalance] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    (supabase as any).from("profiles").select("balance").eq("id", user.id).maybeSingle()
-      .then(({ data }: { data: { balance: number | null } | null }) => setBalance(Number(data?.balance ?? 0)));
-  }, [user?.id]);
+  const [connectingTelegram, setConnectingTelegram] = useState(false);
+  const openTelegram = async () => {
+    if (connectingTelegram) return;
+    setConnectingTelegram(true);
+    const popup = window.open("about:blank", "_blank");
+    if (popup) popup.opener = null;
+    try {
+      const { data, error } = await supabase.functions.invoke("telegram-link", { body: {} });
+      if (error) {
+        const details = error instanceof FunctionsHttpError ? await error.context.text() : error.message;
+        throw new Error(details);
+      }
+      if (typeof data?.url !== "string" || !data.url.startsWith("https://t.me/nexushelp2bot?start=")) throw new Error("Invalid support link");
+      if (popup) popup.location.href = data.url;
+      else window.location.assign(data.url);
+    } catch (error) {
+      popup?.close();
+      toast.error("Could not open Telegram", { description: error instanceof Error ? error.message : "Please try again." });
+    } finally {
+      setConnectingTelegram(false);
+    }
+  };
 
   const loadTickets = () => {
     if (!user) return;
@@ -64,21 +80,17 @@ const Tickets = () => {
       <section className="animate-fade-up space-y-6">
         <div className="flex flex-col items-center gap-3 text-center">
           <h1 className="font-display text-4xl font-black text-foreground">Create Ticket</h1>
-          {balance !== null && balance > 0 ? (
-          <a
-            href="https://t.me/nexushelp2bot"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Button
+            variant="outline"
+            onClick={openTelegram}
+            disabled={connectingTelegram}
             className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
               <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.06-1.99 1.93c-.23.23-.42.42-.83.42z" />
             </svg>
-            Chat with support on Telegram
-          </a>
-          ) : balance !== null ? (
-            <p className="text-sm text-muted-foreground">Telegram support unlocks once your account has a balance.</p>
-          ) : null}
+            {connectingTelegram ? "Opening Telegram…" : "Chat with support on Telegram"}
+          </Button>
         </div>
 
         <form onSubmit={submitTicket} className="rounded-sm border border-border bg-card px-5 py-6 shadow-[var(--shadow-elevated)]">
