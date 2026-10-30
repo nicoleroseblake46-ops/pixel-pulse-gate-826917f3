@@ -57,6 +57,13 @@
       "when": 1793339084115,
       "tag": "0007_auto_deduct_cart_on_approval",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793339806612,
+      "tag": "0008_admin_delete_visitor_logs",
+      "breakpoints": true
     }
   ]
 }
