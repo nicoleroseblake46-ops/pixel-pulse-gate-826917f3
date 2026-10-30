@@ -55,8 +55,19 @@ const Tickets = () => {
   return (
     <AppLayout>
       <section className="animate-fade-up space-y-6">
-        <div className="text-center">
+        <div className="flex flex-col items-center gap-3 text-center">
           <h1 className="font-display text-4xl font-black text-foreground">Create Ticket</h1>
+          <a
+            href="https://t.me/nexushelp2bot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+              <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.06-1.99 1.93c-.23.23-.42.42-.83.42z" />
+            </svg>
+            Chat with support on Telegram
+          </a>
         </div>
 
         <form onSubmit={submitTicket} className="rounded-sm border border-border bg-card px-5 py-6 shadow-[var(--shadow-elevated)]">
