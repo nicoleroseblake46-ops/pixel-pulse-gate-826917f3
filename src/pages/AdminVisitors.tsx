@@ -14,7 +14,10 @@ import {
   Search,
   UserRound,
   Users,
+  EyeOff,
+  Trash2,
 } from "lucide-react";
+import { NO_TRACK_KEY } from "@/hooks/use-visitor-tracking";
 import { AppLayout } from "@/components/AppLayout";
 import { CountryFlag } from "@/components/CountryFlag";
 import { Loader } from "@/components/Loader";
@@ -116,6 +119,8 @@ const AdminVisitors = () => {
   const [geo, setGeo] = useState<Record<string, Geo>>(readGeoCache);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [noTrack, setNoTrack] = useState(() => localStorage.getItem(NO_TRACK_KEY) === "1");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [page, setPage] = useState(1);
@@ -322,9 +327,38 @@ const AdminVisitors = () => {
               Accounts, visits, locations and devices in one place.
             </p>
           </div>
-          <Button variant="secondary" onClick={() => load(true)} disabled={refreshing || loading}>
-            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} /> Refresh
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => load(true)} disabled={refreshing || loading}>
+              <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} /> Refresh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const next = !noTrack;
+                if (next) localStorage.setItem(NO_TRACK_KEY, "1");
+                else localStorage.removeItem(NO_TRACK_KEY);
+                setNoTrack(next);
+                toast.success(next ? "This device is no longer recorded" : "This device will be recorded again");
+              }}
+            >
+              <EyeOff className="h-4 w-4" /> {noTrack ? "Record this device" : "Don't record this device"}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleting || loading}
+              onClick={async () => {
+                if (!confirm("Delete all visitor history? This cannot be undone.")) return;
+                setDeleting(true);
+                const { error } = await supabase.from("visitor_logs").delete().not("id", "is", null);
+                setDeleting(false);
+                if (error) return toast.error("Delete failed", { description: error.message });
+                toast.success("Visitor history deleted");
+                load(true);
+              }}
+            >
+              <Trash2 className="h-4 w-4" /> {deleting ? "Deleting..." : "Delete history"}
+            </Button>
+          </div>
         </header>
 
         <section className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
