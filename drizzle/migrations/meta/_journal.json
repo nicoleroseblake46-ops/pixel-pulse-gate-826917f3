@@ -64,6 +64,13 @@
       "when": 1793339806612,
       "tag": "0008_admin_delete_visitor_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793341352976,
+      "tag": "0009_telegram_open_tickets",
+      "breakpoints": true
     }
   ]
 }
