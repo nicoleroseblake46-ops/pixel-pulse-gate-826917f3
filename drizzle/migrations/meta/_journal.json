@@ -50,6 +50,13 @@
       "when": 1791096687012,
       "tag": "0006_bulk_admin_user_actions",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793339084115,
+      "tag": "0007_auto_deduct_cart_on_approval",
+      "breakpoints": true
     }
   ]
 }
