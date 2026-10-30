@@ -16,7 +16,7 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const HELP =
   "👋 <b>Nexus Support</b>\n\n" +
   "Commands:\n" +
-  "/ticket <i>your message</i> — open a support ticket\n" +
+  "🎫 Raise a ticket — tap the button below, or use /ticket <i>your message</i>\n" +
   "/help — show this menu\n\n" +
   "Example:\n<code>/ticket My deposit hasn't arrived yet</code>\n\n" +
   "You can also just type your message and it will be sent as a ticket.";
@@ -31,11 +31,12 @@ Deno.serve(async (req) => {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const send = async (chat_id: number, text: string) => {
+  const KEYBOARD = { keyboard: [[{ text: "🎫 Raise a ticket" }], [{ text: "❓ Help" }]], resize_keyboard: true, is_persistent: true };
+  const send = async (chat_id: number, text: string, markup?: unknown) => {
     const r = await fetch(`${GATEWAY_URL}/sendMessage`, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "X-Connection-Api-Key": TELEGRAM_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id, text, parse_mode: "HTML", disable_web_page_preview: true }),
+      body: JSON.stringify({ chat_id, text, parse_mode: "HTML", disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) }),
     });
     if (!r.ok) console.error(`sendMessage failed [${r.status}]: ${await r.text()}`);
     return r.ok;
@@ -61,8 +62,12 @@ Deno.serve(async (req) => {
       return new Response("ok");
     }
 
-    if (text === "/start" || text === "/help") {
-      await send(chatId, HELP);
+    if (text === "/start" || text === "/help" || text === "❓ Help") {
+      await send(chatId, HELP, KEYBOARD);
+      return new Response("ok");
+    }
+    if (text === "🎫 Raise a ticket" || text === "/ticket") {
+      await send(chatId, "✍️ Type your issue in one message and send it. Our support team will reply right here.", KEYBOARD);
       return new Response("ok");
     }
 
