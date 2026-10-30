@@ -223,6 +223,24 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_open_tickets: {
+        Row: {
+          chat_id: number
+          created_at: string
+          ticket_ref: string | null
+        }
+        Insert: {
+          chat_id: number
+          created_at?: string
+          ticket_ref?: string | null
+        }
+        Update: {
+          chat_id?: number
+          created_at?: string
+          ticket_ref?: string | null
+        }
+        Relationships: []
+      }
       tickets: {
         Row: {
           admin_reply: string | null
