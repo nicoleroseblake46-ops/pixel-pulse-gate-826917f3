@@ -223,6 +223,58 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_account_links: {
+        Row: {
+          chat_id: number
+          linked_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: number
+          linked_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: number
+          linked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_account_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_link_tokens: {
+        Row: {
+          expires_at: string
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_link_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telegram_open_tickets: {
         Row: {
           chat_id: number
@@ -437,6 +489,10 @@ export type Database = {
         Returns: number
       }
       confirm_payment: { Args: { _payment_id: string }; Returns: undefined }
+      consume_telegram_link: {
+        Args: { _chat_id: number; _token_hash: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
