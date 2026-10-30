@@ -42,10 +42,11 @@ const Tickets = () => {
     if (!parsed.success) return toast.error(parsed.error.errors[0].message);
 
     setSaving(true);
-    const { error } = await (supabase as any).from("tickets").insert({ user_id: user.id, subject: parsed.data.subject, message: parsed.data.message, status: "open" });
+    const { data: created, error } = await (supabase as any).from("tickets").insert({ user_id: user.id, subject: parsed.data.subject, message: parsed.data.message, status: "open" }).select("id").single();
     setSaving(false);
     if (error) return toast.error("Ticket failed", { description: error.message });
     toast.success("Ticket sent");
+    if (created?.id) supabase.functions.invoke("ticket-notify", { body: { ticket_id: created.id } }).catch(() => {});
     setSubject("");
     setMessage("");
     loadTickets();
