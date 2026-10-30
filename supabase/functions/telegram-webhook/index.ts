@@ -46,6 +46,29 @@ Deno.serve(async (req) => {
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   try {
     const update = await req.json();
+    const cq = update.callback_query;
+    if (cq) {
+      const tg = (method: string, payload: unknown) => fetch(`${GATEWAY_URL}/${method}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "X-Connection-Api-Key": TELEGRAM_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const m = typeof cq.data === "string" ? cq.data.match(/^pay:([ar]):([0-9a-f-]{36})$/i) : null;
+      if (cq.from?.id !== ADMIN_CHAT_ID || !m) {
+        await tg("answerCallbackQuery", { callback_query_id: cq.id, text: "Not allowed" });
+        return new Response("ok");
+      }
+      const { data: result, error } = await db.rpc("bot_review_payment", { _payment_id: m[2], _approve: m[1] === "a" });
+      const label = error ? `⚠️ Failed: ${error.message}` : result === "confirmed" ? "✅ Approved — balance credited" : result === "rejected" ? "❌ Rejected" : `ℹ️ Already ${result}`;
+      await tg("answerCallbackQuery", { callback_query_id: cq.id, text: label.slice(0, 190) });
+      if (!error && cq.message) {
+        await tg("editMessageText", {
+          chat_id: cq.message.chat.id, message_id: cq.message.message_id, parse_mode: "HTML",
+          text: `${esc(cq.message.text ?? "")}\n\n<b>${esc(label)}</b>`,
+        });
+      }
+      return new Response("ok");
+    }
     const msg = update.message;
     if (!msg?.chat?.id || typeof msg.text !== "string") return new Response("ok");
     const chatId: number = msg.chat.id;

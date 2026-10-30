@@ -71,6 +71,13 @@
       "when": 1793341352976,
       "tag": "0009_telegram_open_tickets",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793341923466,
+      "tag": "0010_bot_payment_review",
+      "breakpoints": true
     }
   ]
 }

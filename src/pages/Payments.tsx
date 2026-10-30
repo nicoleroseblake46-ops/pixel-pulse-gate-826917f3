@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertCircle, Check, Copy, CreditCard, ShoppingCart, Trash2, Wallet, X } from "lucide-react";
@@ -82,6 +83,7 @@ const Payments = () => {
     setSubmitting(true);
     try {
       const paymentId = await createPendingPayment(checkoutAmount, bonus, coin, walletAddress);
+      supabase.functions.invoke("payment-notify", { body: { payment_id: paymentId } }).catch(() => {});
       toast.success("Payment pending", { description: `Order ${paymentId.slice(0, 8)} is awaiting confirmation.` });
       setAmount("");
       setSelected(null);
