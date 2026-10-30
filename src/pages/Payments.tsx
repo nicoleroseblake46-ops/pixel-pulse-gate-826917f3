@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertCircle, Check, Copy, CreditCard, ShoppingCart, Trash2, Wallet, X } from "lucide-react";
