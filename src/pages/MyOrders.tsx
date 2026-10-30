@@ -1,6 +1,6 @@
 import { buildCardDelivery, buildProxyDelivery } from "@/lib/delivery";
 import { useEffect, useMemo, useState } from "react";
-import { Clock, PackageCheck, PackageX, ShoppingBag, Copy, Undo2 } from "lucide-react";
+import { Clock, PackageCheck, PackageX, Copy, Undo2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
