@@ -22,6 +22,13 @@ const Tickets = () => {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    (supabase as any).from("profiles").select("balance").eq("id", user.id).maybeSingle()
+      .then(({ data }: { data: { balance: number | null } | null }) => setBalance(Number(data?.balance ?? 0)));
+  }, [user?.id]);
 
   const loadTickets = () => {
     if (!user) return;
@@ -57,6 +64,7 @@ const Tickets = () => {
       <section className="animate-fade-up space-y-6">
         <div className="flex flex-col items-center gap-3 text-center">
           <h1 className="font-display text-4xl font-black text-foreground">Create Ticket</h1>
+          {balance !== null && balance > 0 ? (
           <a
             href="https://t.me/nexushelp2bot"
             target="_blank"
@@ -68,6 +76,9 @@ const Tickets = () => {
             </svg>
             Chat with support on Telegram
           </a>
+          ) : balance !== null ? (
+            <p className="text-sm text-muted-foreground">Telegram support unlocks once your account has a balance.</p>
+          ) : null}
         </div>
 
         <form onSubmit={submitTicket} className="rounded-sm border border-border bg-card px-5 py-6 shadow-[var(--shadow-elevated)]">
