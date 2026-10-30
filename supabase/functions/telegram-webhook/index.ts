@@ -1,3 +1,4 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
 const ADMIN_CHAT_ID = 8264469260; // site owner's chat with @nexushelp2bot
 
@@ -42,6 +43,7 @@ Deno.serve(async (req) => {
     return r.ok;
   };
 
+  const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   try {
     const update = await req.json();
     const msg = update.message;
@@ -54,7 +56,8 @@ Deno.serve(async (req) => {
       const original: string | undefined = msg.reply_to_message?.text;
       const m = original?.match(/Chat ID:\s*(-?\d+)/);
       if (m) {
-        const ok = await send(Number(m[1]), `💬 <b>Support reply</b>\n\n${esc(text)}`);
+        const ok = await send(Number(m[1]), `💬 <b>Support reply</b>\n\n${esc(text)}\n\n<i>You can now raise a new ticket if needed.</i>`);
+        if (ok) await db.from("telegram_open_tickets").delete().eq("chat_id", Number(m[1]));
         await send(ADMIN_CHAT_ID, ok ? "✅ Reply delivered." : "⚠️ Could not deliver the reply.");
       } else if (text.startsWith("/")) {
         await send(ADMIN_CHAT_ID, "ℹ️ To answer a customer, swipe-reply to their ticket message.");
@@ -80,6 +83,12 @@ Deno.serve(async (req) => {
       return new Response("ok");
     }
 
+    const { data: open } = await db.from("telegram_open_tickets").select("ticket_ref").eq("chat_id", chatId).maybeSingle();
+    if (open) {
+      await send(chatId, `⏳ Your ticket <b>${esc(open.ticket_ref ?? "")}</b> is still waiting for a reply. You can send a new ticket once support answers it.`, KEYBOARD);
+      return new Response("ok");
+    }
+
     const from = msg.from ?? {};
     const name = [from.first_name, from.last_name].filter(Boolean).join(" ") || "Unknown";
     const handle = from.username ? `@${from.username}` : "no username";
@@ -89,6 +98,7 @@ Deno.serve(async (req) => {
       ADMIN_CHAT_ID,
       `🎫 <b>New Telegram ticket</b> ${ref}\n<b>From:</b> ${esc(name)} (${esc(handle)})\nChat ID: ${chatId}\n\n${esc(body)}\n\n<i>Reply to this message to answer.</i>`,
     );
+    await db.from("telegram_open_tickets").upsert({ chat_id: chatId, ticket_ref: ref });
     await send(chatId, `✅ Ticket <b>${ref}</b> received. Our support team will reply here shortly.`);
     return new Response("ok");
   } catch (e) {
