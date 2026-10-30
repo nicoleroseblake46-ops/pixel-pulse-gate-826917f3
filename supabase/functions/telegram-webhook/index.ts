@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { canRaiseTelegramTicket } from "./eligibility.ts";
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
 const ADMIN_CHAT_ID = 8264469260; // site owner's chat with @nexushelp2bot
 
@@ -39,11 +40,19 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "X-Connection-Api-Key": TELEGRAM_API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id, text, parse_mode: "HTML", disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) }),
     });
-    if (!r.ok) console.error(`sendMessage failed [${r.status}]: ${await r.text()}`);
-    return r.ok;
+    if (!r.ok) {
+      console.error(`sendMessage failed [${r.status}]: ${await r.text()}`);
+      return false;
+    }
+    const result = await r.json();
+    if (!result.ok) console.error("sendMessage failed:", result.description);
+    return result.ok === true;
   };
 
-  const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const dbUrl = Deno.env.get("SUPABASE_URL");
+  const dbKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!dbUrl || !dbKey) return new Response("Not configured", { status: 503 });
+  const db = createClient(dbUrl, dbKey);
   try {
     const update = await req.json();
     const cq = update.callback_query;
@@ -88,7 +97,32 @@ Deno.serve(async (req) => {
       return new Response("ok");
     }
 
-    if (text === "/start" || text === "/help" || text === "❓ Help") {
+    // Only private chats may link accounts or raise support tickets.
+    if (msg.chat.type !== "private" || msg.from?.id !== chatId) return new Response("ok");
+    const start = text.match(/^\/start(?:@\w+)?(?:\s+([a-f0-9]{48}))?$/i);
+    if (start?.[1]) {
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(start[1]));
+      const hash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+      const { data: linked, error } = await db.rpc("consume_telegram_link", { _token_hash: hash, _chat_id: chatId });
+      if (error || !linked) {
+        await send(chatId, "This account link has expired or was already used. Open Tickets on the website and tap Telegram again.", { remove_keyboard: true });
+        return new Response("ok");
+      }
+    }
+    const { data: link, error: linkError } = await db.from("telegram_account_links").select("user_id").eq("chat_id", chatId).maybeSingle();
+    if (linkError) throw linkError;
+    if (!link) {
+      await send(chatId, "👋 Welcome to Nexus Support. Connect your site account by opening Tickets on the website and tapping Telegram. A positive account balance is required to raise tickets.", { remove_keyboard: true });
+      return new Response("ok");
+    }
+    const { data: profile, error: profileError } = await db.from("profiles").select("balance,banned_at").eq("id", link.user_id).maybeSingle();
+    if (profileError) throw profileError;
+    if (!canRaiseTelegramTicket(profile)) {
+      await send(chatId, profile?.banned_at ? "This account cannot use support. Your account is restricted." : "👋 Welcome to Nexus Support. You cannot raise a ticket while your site balance is $0 or below. Top up your account, then send /start again.", { remove_keyboard: true });
+      return new Response("ok");
+    }
+
+    if (start || text === "/help" || text === "❓ Help") {
       await send(chatId, HELP, KEYBOARD);
       return new Response("ok");
     }
@@ -106,7 +140,8 @@ Deno.serve(async (req) => {
       return new Response("ok");
     }
 
-    const { data: open } = await db.from("telegram_open_tickets").select("ticket_ref").eq("chat_id", chatId).maybeSingle();
+    const { data: open, error: openError } = await db.from("telegram_open_tickets").select("ticket_ref").eq("chat_id", chatId).maybeSingle();
+    if (openError) throw openError;
     if (open) {
       await send(chatId, `⏳ Your ticket <b>${esc(open.ticket_ref ?? "")}</b> is still waiting for a reply. You can send a new ticket once support answers it.`, KEYBOARD);
       return new Response("ok");
@@ -117,11 +152,21 @@ Deno.serve(async (req) => {
     const handle = from.username ? `@${from.username}` : "no username";
     const ref = `T${update.update_id.toString(36).toUpperCase()}`;
 
-    await send(
+    const { error: reserveError } = await db.from("telegram_open_tickets").insert({ chat_id: chatId, ticket_ref: ref });
+    if (reserveError) {
+      if (reserveError.code !== "23505") throw reserveError;
+      await send(chatId, "⏳ Your earlier ticket is still waiting for a reply.", KEYBOARD);
+      return new Response("ok");
+    }
+    const delivered = await send(
       ADMIN_CHAT_ID,
       `🎫 <b>New Telegram ticket</b> ${ref}\n<b>From:</b> ${esc(name)} (${esc(handle)})\nChat ID: ${chatId}\n\n${esc(body)}\n\n<i>Reply to this message to answer.</i>`,
     );
-    await db.from("telegram_open_tickets").upsert({ chat_id: chatId, ticket_ref: ref });
+    if (!delivered) {
+      await db.from("telegram_open_tickets").delete().eq("chat_id", chatId).eq("ticket_ref", ref);
+      await send(chatId, "We couldn't send your ticket. Please try again shortly.");
+      return new Response("ok");
+    }
     await send(chatId, `✅ Ticket <b>${ref}</b> received. Our support team will reply here shortly.`);
     return new Response("ok");
   } catch (e) {
