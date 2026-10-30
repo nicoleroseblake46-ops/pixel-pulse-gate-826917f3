@@ -120,18 +120,6 @@ const MyOrders = () => {
 
   return (
     <AppLayout>
-      <div className="mb-8 animate-fade-up">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary glow-primary">
-            <ShoppingBag className="h-6 w-6 text-background" />
-          </div>
-          <div>
-            <div className="font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">/ My Orders</div>
-            <h1 className="font-display text-4xl font-black tracking-tight md:text-5xl"><span className="neon-text">My Orders</span></h1>
-          </div>
-        </div>
-        <p className="mt-3 text-muted-foreground">Delivered items, copy-ready details, and refunds.</p>
-      </div>
 
       <section className="glass rounded-xl p-4 animate-fade-up md:p-5">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
