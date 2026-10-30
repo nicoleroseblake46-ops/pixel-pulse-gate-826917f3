@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Show Telegram support to all accounts and enforce positive balance in the bot
+- [ ] Verify bot eligibility and account linking
+
 - [x] Build grouped account and anonymous visitor activity view
 - [x] Add search, filters, expansion, and pagination
 - [x] Parallelize and cache visible location lookups
