@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertCircle, Check, Copy, CreditCard, ShoppingCart, Trash2, Wallet, X } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
@@ -31,6 +31,8 @@ const Payments = () => {
   const [copiedAmount, setCopiedAmount] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
+  const submitLock = useRef(false);
+  const buyLock = useRef(false);
 
   const checkoutAmount = selected ?? Number(amount);
   const bonus = bonuses[checkoutAmount] ?? 0;
@@ -75,20 +77,26 @@ const Payments = () => {
       return;
     }
 
+    if (submitLock.current) return;
+    submitLock.current = true;
     setSubmitting(true);
     try {
       const paymentId = await createPendingPayment(checkoutAmount, bonus, coin, walletAddress);
       toast.success("Payment pending", { description: `Order ${paymentId.slice(0, 8)} is awaiting confirmation.` });
       setAmount("");
       setSelected(null);
+      setCopiedAddress(null);
     } catch (error) {
       toast.error("Checkout failed", { description: error instanceof Error ? error.message : "Please try again." });
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   };
 
   const buyCart = async () => {
+    if (buyLock.current) return;
+    buyLock.current = true;
     setPurchasing(true);
     try {
       const orderId = await purchaseCartWithBalance();
@@ -96,6 +104,7 @@ const Payments = () => {
     } catch (error) {
       toast.error("Purchase failed", { description: error instanceof Error ? error.message : "Please top up first." });
     } finally {
+      buyLock.current = false;
       setPurchasing(false);
     }
   };
