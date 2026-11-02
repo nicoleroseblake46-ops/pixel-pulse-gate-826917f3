@@ -116,8 +116,8 @@ const Dashboard = () => {
       const n = (name ?? "").trim();
       if (!n) return false;
       if (JUNK.has(n.toLowerCase())) return false;
-      // keep anything explicitly labelled a base or carrying a date/number tag
-      return /base/i.test(n) || /\d{4}-\d{1,2}(-\d{1,2})?/.test(n) || /\d{3,}/.test(n);
+      // keep anything explicitly labelled a base or carrying a date/number/validity tag
+      return /base/i.test(n) || /\d{4}-\d{1,2}(-\d{1,2})?/.test(n) || /\d{3,}/.test(n) || /\d{2,3}\s*%\s*valid/i.test(n);
     };
 
     // Dedupe by base name — newest occurrence wins (bases already sorted desc by created_at)
