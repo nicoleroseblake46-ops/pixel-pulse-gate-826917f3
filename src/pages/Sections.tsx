@@ -429,8 +429,15 @@ export const Cards = () => {
                           {c.name}
                         </Link>
                       </Td>
-                      <Td className="max-w-[140px] truncate font-medium" title={(c as any).vendor ?? ""}>
-                        {(c as any).vendor ?? "—"}
+                      <Td className="max-w-[90px] truncate font-medium" title={(c as any).vendor ?? ""}>
+                        {(c as any).vendor ? (
+                          <Link
+                            to={`/bases?vendor=${encodeURIComponent((c as any).vendor)}`}
+                            className="text-primary underline-offset-2 hover:underline"
+                          >
+                            {(c as any).vendor}
+                          </Link>
+                        ) : "—"}
                       </Td>
                       <Td className="font-mono font-semibold">${Number(c.price).toFixed(2)}</Td>
                       <Td>
