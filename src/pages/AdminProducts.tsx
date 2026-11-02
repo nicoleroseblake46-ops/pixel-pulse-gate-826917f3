@@ -1170,13 +1170,13 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
       } as any;
     });
 
-    // Auto base name in the form 0908-US-CA-GB-84%valid when none was typed
+    // Auto base name: pick from a small pool of common names so the Bases
+    // section stays tidy instead of filling with one-off names per upload.
     if (!base.trim()) {
-      const d = new Date();
-      const stamp = `${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-      const codes = Array.from(new Set(payload.map((p: any) => p.country_code).filter(Boolean))).slice(0, 5);
+      const COMMON_BASES = ["PREMIUM MIX", "GOLD BASE", "FRESH MIX", "ELITE BASE"];
+      const pick = COMMON_BASES[Math.floor(Math.random() * COMMON_BASES.length)];
       const validPct = 78 + Math.floor(Math.random() * 18);
-      const autoName = [stamp, ...codes, `${validPct}%valid`].join("-");
+      const autoName = `${pick}-${validPct}%valid`;
       payload.forEach((p: any) => { p.name = autoName; });
     }
 
@@ -1204,7 +1204,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         <span className="rounded-full bg-primary/20 px-2 py-0.5 font-mono text-[10px] text-primary">{preview.length} parsed</span>
       </div>
       <div className="grid gap-2 md:grid-cols-[1fr_140px]">
-        <Input placeholder="Base name (leave empty for auto e.g. 0908-US-CA-GB-84%valid)" value={base} onChange={(e) => setBase(e.target.value)} />
+        <Input placeholder="Base name (leave empty for auto e.g. PREMIUM MIX-84%valid)" value={base} onChange={(e) => setBase(e.target.value)} />
         <Input placeholder="Price USD" type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
       </div>
       <Textarea
