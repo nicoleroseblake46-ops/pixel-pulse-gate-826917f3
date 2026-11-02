@@ -39,11 +39,13 @@ const Bases = () => {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [searchParams] = useSearchParams();
+  const vendorFilter = searchParams.get("vendor");
 
   const load = async () => {
     const { data } = await supabase
       .from("products")
-      .select("id,name,category,country_code,valid,price,created_at")
+      .select("id,name,category,country_code,valid,price,vendor,created_at")
       .eq("is_active", true)
       .in("category", ["cards", "sales"])
       .order("created_at", { ascending: false });
@@ -66,10 +68,12 @@ const Bases = () => {
       const key = (r.name ?? "").trim();
       if (!key) continue;
       const code = findCountry(r.country_code)?.code ?? (r.country_code ?? "").toUpperCase();
+      const vendor = (r.vendor ?? "").trim();
       const existing = map.get(key);
       if (existing) {
         existing.count += 1;
         if (code && !existing.countries.includes(code)) existing.countries.push(code);
+        if (vendor && !existing.vendors.includes(vendor)) existing.vendors.push(vendor);
         if (Number(r.price) < existing.minPrice) existing.minPrice = Number(r.price);
         if (!existing.validity) existing.validity = validityOf(key, r.valid);
       } else {
@@ -78,6 +82,7 @@ const Bases = () => {
           category: r.category,
           count: 1,
           countries: code ? [code] : [],
+          vendors: vendor ? [vendor] : [],
           validity: validityOf(key, r.valid),
           minPrice: Number(r.price) || 0,
           updatedAt: r.created_at,
