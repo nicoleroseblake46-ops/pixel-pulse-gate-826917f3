@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Database, Radio, ArrowUpRight, Search } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { CountryFlag } from "@/components/CountryFlag";
@@ -13,6 +13,7 @@ type Row = {
   country_code: string | null;
   valid: string | null;
   price: number;
+  vendor: string | null;
   created_at: string;
 };
 
@@ -21,6 +22,7 @@ type BaseGroup = {
   category: string;
   count: number;
   countries: string[];
+  vendors: string[];
   validity: string | null;
   minPrice: number;
   updatedAt: string;
