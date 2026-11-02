@@ -93,8 +93,13 @@ const Bases = () => {
   }, [rows]);
 
   const filtered = useMemo(
-    () => bases.filter((b) => b.name.toLowerCase().includes(q.toLowerCase())),
-    [bases, q],
+    () =>
+      bases.filter(
+        (b) =>
+          b.name.toLowerCase().includes(q.toLowerCase()) &&
+          (!vendorFilter || b.vendors.some((v) => v.toLowerCase() === vendorFilter.toLowerCase())),
+      ),
+    [bases, q, vendorFilter],
   );
   const totalLive = filtered.reduce((n, b) => n + b.count, 0);
 
@@ -107,6 +112,14 @@ const Bases = () => {
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" /> Live inventory
             </div>
             <h1 className="font-display text-2xl font-black tracking-tight md:text-3xl">Bases</h1>
+            {vendorFilter && (
+              <Link
+                to="/bases"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 font-mono text-[11px] font-bold text-primary transition-colors hover:bg-primary/20"
+              >
+                Vendor: {vendorFilter} <span aria-hidden>✕</span>
+              </Link>
+            )}
           </div>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
