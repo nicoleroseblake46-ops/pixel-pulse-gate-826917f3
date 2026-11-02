@@ -40,6 +40,7 @@ const emptyForm = {
   card_type: "",
   bank: "",
   seller: "",
+  vendor: "",
   exp: "",
   zip: "",
   valid: "",
@@ -130,6 +131,7 @@ const AdminProducts = () => {
       card_type: form.card_type.trim() || null,
       bank: form.bank.trim() || null,
       seller: isCards ? form.seller.trim() || null : null,
+      vendor: isCards ? form.vendor.trim() || null : null,
       exp: isCards ? form.exp.trim() || null : null,
       zip: isCards ? form.zip.trim() || null : null,
       valid: isCards ? form.valid.trim() || null : null,
@@ -172,6 +174,7 @@ const AdminProducts = () => {
       card_type: p.card_type ?? "",
       bank: p.bank ?? "",
       seller: p.seller ?? "",
+      vendor: (p as any).vendor ?? "",
       exp: p.exp ?? "",
       zip: p.zip ?? "",
       valid: p.valid ?? "",
@@ -362,6 +365,7 @@ const AdminProducts = () => {
                       <div className="grid gap-3 rounded-lg border border-border/60 bg-secondary/30 p-3 md:grid-cols-3">
                         <Input placeholder="Base (e.g. Galaxy:25-04)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                         <Input placeholder="Seller / Full name" value={form.seller} onChange={(e) => setForm({ ...form, seller: e.target.value })} />
+                        <Input placeholder="Vendor (e.g. Dickey [Diamond])" value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} />
                         <Input placeholder="BIN" value={form.bin} onChange={(e) => setForm({ ...form, bin: e.target.value })} />
                         <Input placeholder="Exp (e.g. 2/27)" value={form.exp} onChange={(e) => setForm({ ...form, exp: e.target.value })} />
                         <Input placeholder="ZIP" value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} />

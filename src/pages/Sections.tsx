@@ -385,6 +385,7 @@ export const Cards = () => {
                   <Th>Exp Date</Th>
                   <Th>Zipcode</Th>
                   <Th>Base Name</Th>
+                  <Th>Vendor</Th>
                   <Th>Price</Th>
                   <Th>Action</Th>
                 </tr>
@@ -427,6 +428,9 @@ export const Cards = () => {
                         >
                           {c.name}
                         </Link>
+                      </Td>
+                      <Td className="max-w-[140px] truncate font-medium" title={(c as any).vendor ?? ""}>
+                        {(c as any).vendor ?? "—"}
                       </Td>
                       <Td className="font-mono font-semibold">${Number(c.price).toFixed(2)}</Td>
                       <Td>
