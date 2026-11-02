@@ -1204,7 +1204,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         <span className="rounded-full bg-primary/20 px-2 py-0.5 font-mono text-[10px] text-primary">{preview.length} parsed</span>
       </div>
       <div className="grid gap-2 md:grid-cols-[1fr_140px]">
-        <Input placeholder="Base name (leave empty for auto e.g. 0908-US-CA-GB-84%valid)" value={base} onChange={(e) => setBase(e.target.value)} />
+        <Input placeholder="Base name (leave empty for auto e.g. PREMIUM MIX-84%valid)" value={base} onChange={(e) => setBase(e.target.value)} />
         <Input placeholder="Price USD" type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
       </div>
       <Textarea
