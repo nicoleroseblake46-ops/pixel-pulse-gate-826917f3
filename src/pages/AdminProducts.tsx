@@ -57,6 +57,11 @@ const emptyForm = {
 
 type VendorOpt = { id: string; handle: string; name: string };
 
+// Small pool of common vendor names — used to auto-fill the Vendor column
+// when no vendor is typed in, so the storefront table never shows blanks.
+export const VENDOR_NAMES = ["Maverick", "Ghostline", "Nighthawk", "Onyx", "Vulcan"];
+const pickVendor = () => VENDOR_NAMES[Math.floor(Math.random() * VENDOR_NAMES.length)];
+
 const AdminProducts = () => {
   const { isAdmin, loading: adminLoading } = useAdmin();
   const { settings, setSetting } = useAppSettings();
@@ -131,7 +136,7 @@ const AdminProducts = () => {
       card_type: form.card_type.trim() || null,
       bank: form.bank.trim() || null,
       seller: isCards ? form.seller.trim() || null : null,
-      vendor: isCards ? form.vendor.trim() || null : null,
+      vendor: isCards ? form.vendor.trim() || pickVendor() : null,
       exp: isCards ? form.exp.trim() || null : null,
       zip: isCards ? form.zip.trim() || null : null,
       valid: isCards ? form.valid.trim() || null : null,
@@ -1158,6 +1163,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         bank,
         country: c?.name ?? (r.country ? r.country.trim() : ""),
         country_code: c?.code ?? "",
+        vendor: VENDOR_NAMES[idx % VENDOR_NAMES.length],
         vendor_id: defaultVendorId || null,
         seller: mock.name,
         city: mock.city,
