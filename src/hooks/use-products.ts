@@ -27,7 +27,6 @@ export type Product = {
   country_code: string | null;
   extras: string | null;
   image_url: string | null;
-  vendor: string | null;
   created_at: string;
   updated_at: string;
 };

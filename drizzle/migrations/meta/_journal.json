@@ -85,27 +85,6 @@
       "when": 1793342802278,
       "tag": "0011_telegram_account_linking",
       "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1793596364108,
-      "tag": "0012_add_product_vendor",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1793597304239,
-      "tag": "0013_common_base_names_pool",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1793598166682,
-      "tag": "0014_common_vendor_names_pool",
-      "breakpoints": true
     }
   ]
 }

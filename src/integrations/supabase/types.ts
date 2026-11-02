@@ -119,7 +119,6 @@ export type Database = {
           tag: string | null
           updated_at: string
           valid: string | null
-          vendor: string | null
           vendor_id: string | null
           zip: string | null
         }
@@ -152,7 +151,6 @@ export type Database = {
           tag?: string | null
           updated_at?: string
           valid?: string | null
-          vendor?: string | null
           vendor_id?: string | null
           zip?: string | null
         }
@@ -185,7 +183,6 @@ export type Database = {
           tag?: string | null
           updated_at?: string
           valid?: string | null
-          vendor?: string | null
           vendor_id?: string | null
           zip?: string | null
         }

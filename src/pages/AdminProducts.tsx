@@ -40,7 +40,6 @@ const emptyForm = {
   card_type: "",
   bank: "",
   seller: "",
-  vendor: "",
   exp: "",
   zip: "",
   valid: "",
@@ -56,11 +55,6 @@ const emptyForm = {
 };
 
 type VendorOpt = { id: string; handle: string; name: string };
-
-// Small pool of common vendor names — used to auto-fill the Vendor column
-// when no vendor is typed in, so the storefront table never shows blanks.
-export const VENDOR_NAMES = ["Maverick", "Ghostline", "Nighthawk", "Onyx", "Vulcan"];
-const pickVendor = () => VENDOR_NAMES[Math.floor(Math.random() * VENDOR_NAMES.length)];
 
 const AdminProducts = () => {
   const { isAdmin, loading: adminLoading } = useAdmin();
@@ -136,7 +130,6 @@ const AdminProducts = () => {
       card_type: form.card_type.trim() || null,
       bank: form.bank.trim() || null,
       seller: isCards ? form.seller.trim() || null : null,
-      vendor: isCards ? form.vendor.trim() || pickVendor() : null,
       exp: isCards ? form.exp.trim() || null : null,
       zip: isCards ? form.zip.trim() || null : null,
       valid: isCards ? form.valid.trim() || null : null,
@@ -179,7 +172,6 @@ const AdminProducts = () => {
       card_type: p.card_type ?? "",
       bank: p.bank ?? "",
       seller: p.seller ?? "",
-      vendor: (p as any).vendor ?? "",
       exp: p.exp ?? "",
       zip: p.zip ?? "",
       valid: p.valid ?? "",
@@ -370,7 +362,6 @@ const AdminProducts = () => {
                       <div className="grid gap-3 rounded-lg border border-border/60 bg-secondary/30 p-3 md:grid-cols-3">
                         <Input placeholder="Base (e.g. Galaxy:25-04)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                         <Input placeholder="Seller / Full name" value={form.seller} onChange={(e) => setForm({ ...form, seller: e.target.value })} />
-                        <Input placeholder="Vendor (e.g. Dickey [Diamond])" value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} />
                         <Input placeholder="BIN" value={form.bin} onChange={(e) => setForm({ ...form, bin: e.target.value })} />
                         <Input placeholder="Exp (e.g. 2/27)" value={form.exp} onChange={(e) => setForm({ ...form, exp: e.target.value })} />
                         <Input placeholder="ZIP" value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} />
@@ -1163,7 +1154,6 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         bank,
         country: c?.name ?? (r.country ? r.country.trim() : ""),
         country_code: c?.code ?? "",
-        vendor: VENDOR_NAMES[idx % VENDOR_NAMES.length],
         vendor_id: defaultVendorId || null,
         seller: mock.name,
         city: mock.city,
@@ -1176,13 +1166,13 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
       } as any;
     });
 
-    // Auto base name: pick from a small pool of common names so the Bases
-    // section stays tidy instead of filling with one-off names per upload.
+    // Auto base name in the form 0908-US-CA-GB-84%valid when none was typed
     if (!base.trim()) {
-      const COMMON_BASES = ["PREMIUM MIX", "GOLD BASE", "FRESH MIX", "ELITE BASE"];
-      const pick = COMMON_BASES[Math.floor(Math.random() * COMMON_BASES.length)];
+      const d = new Date();
+      const stamp = `${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+      const codes = Array.from(new Set(payload.map((p: any) => p.country_code).filter(Boolean))).slice(0, 5);
       const validPct = 78 + Math.floor(Math.random() * 18);
-      const autoName = `${pick}-${validPct}%valid`;
+      const autoName = [stamp, ...codes, `${validPct}%valid`].join("-");
       payload.forEach((p: any) => { p.name = autoName; });
     }
 
@@ -1210,7 +1200,7 @@ const BulkCardsPaste = ({ onImported, defaultVendorId }: { onImported: () => Pro
         <span className="rounded-full bg-primary/20 px-2 py-0.5 font-mono text-[10px] text-primary">{preview.length} parsed</span>
       </div>
       <div className="grid gap-2 md:grid-cols-[1fr_140px]">
-        <Input placeholder="Base name (leave empty for auto e.g. PREMIUM MIX-84%valid)" value={base} onChange={(e) => setBase(e.target.value)} />
+        <Input placeholder="Base name (leave empty for auto e.g. 0908-US-CA-GB-84%valid)" value={base} onChange={(e) => setBase(e.target.value)} />
         <Input placeholder="Price USD" type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
       </div>
       <Textarea
