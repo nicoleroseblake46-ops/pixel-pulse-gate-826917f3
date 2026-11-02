@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Database, Radio, ArrowUpRight, Search } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { CountryFlag } from "@/components/CountryFlag";
@@ -13,6 +13,7 @@ type Row = {
   country_code: string | null;
   valid: string | null;
   price: number;
+  vendor: string | null;
   created_at: string;
 };
 
@@ -21,6 +22,7 @@ type BaseGroup = {
   category: string;
   count: number;
   countries: string[];
+  vendors: string[];
   validity: string | null;
   minPrice: number;
   updatedAt: string;
@@ -37,11 +39,13 @@ const Bases = () => {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [searchParams] = useSearchParams();
+  const vendorFilter = searchParams.get("vendor");
 
   const load = async () => {
     const { data } = await supabase
       .from("products")
-      .select("id,name,category,country_code,valid,price,created_at")
+      .select("id,name,category,country_code,valid,price,vendor,created_at")
       .eq("is_active", true)
       .in("category", ["cards", "sales"])
       .order("created_at", { ascending: false });
@@ -64,10 +68,12 @@ const Bases = () => {
       const key = (r.name ?? "").trim();
       if (!key) continue;
       const code = findCountry(r.country_code)?.code ?? (r.country_code ?? "").toUpperCase();
+      const vendor = (r.vendor ?? "").trim();
       const existing = map.get(key);
       if (existing) {
         existing.count += 1;
         if (code && !existing.countries.includes(code)) existing.countries.push(code);
+        if (vendor && !existing.vendors.includes(vendor)) existing.vendors.push(vendor);
         if (Number(r.price) < existing.minPrice) existing.minPrice = Number(r.price);
         if (!existing.validity) existing.validity = validityOf(key, r.valid);
       } else {
@@ -76,6 +82,7 @@ const Bases = () => {
           category: r.category,
           count: 1,
           countries: code ? [code] : [],
+          vendors: vendor ? [vendor] : [],
           validity: validityOf(key, r.valid),
           minPrice: Number(r.price) || 0,
           updatedAt: r.created_at,
@@ -86,8 +93,13 @@ const Bases = () => {
   }, [rows]);
 
   const filtered = useMemo(
-    () => bases.filter((b) => b.name.toLowerCase().includes(q.toLowerCase())),
-    [bases, q],
+    () =>
+      bases.filter(
+        (b) =>
+          b.name.toLowerCase().includes(q.toLowerCase()) &&
+          (!vendorFilter || b.vendors.some((v) => v.toLowerCase() === vendorFilter.toLowerCase())),
+      ),
+    [bases, q, vendorFilter],
   );
   const totalLive = filtered.reduce((n, b) => n + b.count, 0);
 
@@ -100,6 +112,14 @@ const Bases = () => {
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" /> Live inventory
             </div>
             <h1 className="font-display text-2xl font-black tracking-tight md:text-3xl">Bases</h1>
+            {vendorFilter && (
+              <Link
+                to="/bases"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 font-mono text-[11px] font-bold text-primary transition-colors hover:bg-primary/20"
+              >
+                Vendor: {vendorFilter} <span aria-hidden>✕</span>
+              </Link>
+            )}
           </div>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
