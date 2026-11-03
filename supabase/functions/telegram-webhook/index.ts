@@ -112,13 +112,13 @@ Deno.serve(async (req) => {
     const { data: link, error: linkError } = await db.from("telegram_account_links").select("user_id").eq("chat_id", chatId).maybeSingle();
     if (linkError) throw linkError;
     if (!link) {
-      await send(chatId, "👋 Welcome to Nexus Support. Connect your site account by opening Tickets on the website and tapping Telegram. A positive account balance is required to raise tickets.", { remove_keyboard: true });
+      await send(chatId, "👋 Welcome to Nexus Support. Connect your site account by opening Tickets on the website and tapping Telegram, then you can message us here.", { remove_keyboard: true });
       return new Response("ok");
     }
     const { data: profile, error: profileError } = await db.from("profiles").select("balance,banned_at").eq("id", link.user_id).maybeSingle();
     if (profileError) throw profileError;
     if (!canRaiseTelegramTicket(profile)) {
-      await send(chatId, profile?.banned_at ? "This account cannot use support. Your account is restricted." : "👋 Welcome to Nexus Support. You cannot raise a ticket while your site balance is $0 or below. Top up your account, then send /start again.", { remove_keyboard: true });
+      await send(chatId, "This account cannot use support. Your account is restricted.", { remove_keyboard: true });
       return new Response("ok");
     }
 
