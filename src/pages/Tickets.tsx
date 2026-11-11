@@ -84,17 +84,17 @@ const Tickets = () => {
             variant="outline"
             onClick={openTelegram}
             disabled={connectingTelegram}
-            className="inline-flex items-center gap-2.5 rounded-full border border-[#22c55e]/40 bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-[#22c55e] hover:bg-[#22c55e]/10"
+            className="inline-flex items-center gap-2.5 rounded-full border border-[#2AABEE]/40 bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-[#2AABEE] hover:bg-[#2AABEE]/10"
           >
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#22c55e] shadow-[0_0_12px_rgba(34,197,94,0.5)]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2AABEE] shadow-[0_0_12px_rgba(42,171,238,0.5)]">
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-white" aria-hidden="true">
                 <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.06-1.99 1.93c-.23.23-.42.42-.83.42z" />
               </svg>
             </span>
             {connectingTelegram ? "Opening Telegram…" : "Chat with support on Telegram"}
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22c55e] opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#22c55e]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2AABEE] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2AABEE]" />
             </span>
           </Button>
         </div>
