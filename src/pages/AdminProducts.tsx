@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { PaymentMethodsEditor } from "@/components/PaymentMethodsEditor";
 import { Navigate } from "react-router-dom";
-import { Edit3, Plus, Power, RefreshCw, Trash2, X, Package, Tag as TagIcon, CreditCard, Network, Wrench, MonitorSmartphone, Zap, ScrollText, EyeOff } from "lucide-react";
+import { Edit3, Plus, Power, RefreshCw, Trash2, X, Package, Tag as TagIcon, CreditCard, Network, Wrench, MonitorSmartphone, Zap, ScrollText, EyeOff, ChevronDown, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { Loader } from "@/components/Loader";
@@ -151,6 +151,7 @@ const AdminProducts = () => {
       toast.success(editingId ? "Item updated" : "Item published");
       if (saved) syncTelegram(productToUpsert(saved as any));
       reset();
+      if (!editingId) setShowNewForm(false);
       await load();
     }
     setSaving(false);
@@ -210,6 +211,10 @@ const AdminProducts = () => {
 
   const counts = useMemo(() => items.length, [items]);
   const [binQuery, setBinQuery] = useState("");
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 25;
   const filteredItems = useMemo(() => {
     const q = binQuery.trim().toLowerCase();
     if (!q) return items;
@@ -218,6 +223,13 @@ const AdminProducts = () => {
         .some((v) => v && String(v).toLowerCase().includes(q)),
     );
   }, [items, binQuery]);
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pagedItems = useMemo(
+    () => filteredItems.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE),
+    [filteredItems, safePage],
+  );
+  useEffect(() => { setPage(0); }, [binQuery, active]);
 
   if (adminLoading) return <Loader />;
   if (!isAdmin) return <Navigate to="/" replace />;
@@ -237,43 +249,64 @@ const AdminProducts = () => {
         </div>
 
 
-        {/* Minimum deposit setting */}
-        <section className="glass rounded-xl border border-border p-4 md:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/40">
-                <CreditCard className="h-5 w-5 text-muted-foreground" />
+        {/* Store settings — collapsed by default so the inventory list stays front and center */}
+        <section className="glass rounded-xl border border-border">
+          <button
+            type="button"
+            onClick={() => setShowSettings((v) => !v)}
+            className="flex w-full items-center justify-between gap-3 p-4 text-left"
+          >
+            <span className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/40">
+                <Settings2 className="h-5 w-5 text-muted-foreground" />
+              </span>
+              <span>
+                <span className="block font-display text-base font-bold">Store settings</span>
+                <span className="block text-xs text-muted-foreground">Minimum deposit, payment wallets, dashboard blocks</span>
+              </span>
+            </span>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${showSettings ? "rotate-180" : ""}`} />
+          </button>
+          {showSettings && (
+            <div className="space-y-4 border-t border-border p-4 md:p-5">
+              {/* Minimum deposit setting */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/40">
+                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <div className="font-display text-base font-bold">Minimum deposit (USD)</div>
+                    <p className="text-xs text-muted-foreground">Buyers cannot submit a crypto top-up below this amount. Currently <span className="font-mono text-foreground">${currentMinDeposit.toFixed(2)}</span>.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={minDepositInput}
+                    onChange={(e) => setMinDepositInput(e.target.value)}
+                    className="h-10 w-28"
+                  />
+                  <Button
+                    onClick={async () => {
+                      const value = Math.max(0, Number(minDepositInput) || 0);
+                      await setSetting("min_deposit", value);
+                      toast.success(`Minimum deposit set to $${value}`);
+                    }}
+                  >
+                    Save
+                  </Button>
+                </div>
               </div>
-              <div>
-                <div className="font-display text-base font-bold">Minimum deposit (USD)</div>
-                <p className="text-xs text-muted-foreground">Buyers cannot submit a crypto top-up below this amount. Currently <span className="font-mono text-foreground">${currentMinDeposit.toFixed(2)}</span>.</p>
-              </div>
+
+              <PaymentMethodsEditor />
+
+              <DashboardEditor />
             </div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={0}
-                step="1"
-                value={minDepositInput}
-                onChange={(e) => setMinDepositInput(e.target.value)}
-                className="h-10 w-28"
-              />
-              <Button
-                onClick={async () => {
-                  const value = Math.max(0, Number(minDepositInput) || 0);
-                  await setSetting("min_deposit", value);
-                  toast.success(`Minimum deposit set to $${value}`);
-                }}
-              >
-                Save
-              </Button>
-            </div>
-          </div>
+          )}
         </section>
-
-        <PaymentMethodsEditor />
-
-        <DashboardEditor />
 
 
         <Tabs value={active} onValueChange={(v) => setActive(v as ProductCategory)}>
@@ -481,20 +514,27 @@ const AdminProducts = () => {
             );
             return (
             <TabsContent key={c.value} value={c.value} className="mt-6 space-y-6">
-              {!editingId && formSection}
-
+              {!editingId && showNewForm && formSection}
 
               <section className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
                     <Package className="h-4 w-4" /> {counts} items in {c.label}
                   </div>
-                  <Input
-                    value={binQuery}
-                    onChange={(e) => setBinQuery(e.target.value)}
-                    placeholder="Search BIN, bank, country, name…"
-                    className="h-9 w-full max-w-xs font-mono"
-                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      value={binQuery}
+                      onChange={(e) => setBinQuery(e.target.value)}
+                      placeholder="Search BIN, bank, country, name…"
+                      className="h-9 w-full max-w-xs font-mono"
+                    />
+                    {!editingId && (
+                      <Button type="button" size="sm" variant={showNewForm ? "secondary" : "default"} onClick={() => setShowNewForm((v) => !v)}>
+                        {showNewForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                        {showNewForm ? "Close" : `Add ${c.label}`}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {loading ? (
                   <Loader />
@@ -503,7 +543,8 @@ const AdminProducts = () => {
                     {binQuery ? "No card matches that search." : "Nothing here yet. Add your first item above."}
                   </div>
                 ) : (
-                  filteredItems.map((p) => (
+                  <>
+                  {pagedItems.map((p) => (
                     <Fragment key={p.id}>
                     <article className="grid gap-3 rounded-lg border border-border bg-card/60 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                       <div className="min-w-0">
@@ -532,7 +573,21 @@ const AdminProducts = () => {
                       </div>
                     )}
                     </Fragment>
-                  ))
+                  ))}
+                  {pageCount > 1 && (
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card/60 px-4 py-3">
+                      <Button type="button" variant="secondary" size="sm" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>
+                        Previous
+                      </Button>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        Page {safePage + 1} of {pageCount} · {filteredItems.length} items
+                      </span>
+                      <Button type="button" variant="secondary" size="sm" disabled={safePage >= pageCount - 1} onClick={() => setPage(safePage + 1)}>
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                  </>
                 )}
               </section>
             </TabsContent>
