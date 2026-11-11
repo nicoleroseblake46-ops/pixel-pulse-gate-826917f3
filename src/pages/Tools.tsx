@@ -107,26 +107,6 @@ const Tools = () => {
 
   return (
     <AppLayout>
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3 animate-fade-up">
-        <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Inventory tools</div>
-          <h1 className="mt-1 font-display text-2xl font-black tracking-tight md:text-3xl">CC Checker</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Validate cards in bulk. Dead hits are refunded automatically.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs">
-            <span className="text-muted-foreground">Rate</span>{" "}
-            <span className="font-mono font-bold text-foreground">${PRICE_PER_CHECK.toFixed(2)}</span>
-            <span className="text-muted-foreground"> / card</span>
-          </div>
-          <div className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs">
-            <span className="text-muted-foreground">Balance</span>{" "}
-            <span className="font-mono font-bold text-foreground">${balance.toFixed(2)}</span>
-          </div>
-        </div>
-      </div>
-
       {/* CC Checker */}
       <section className="mb-10 animate-fade-up">
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
